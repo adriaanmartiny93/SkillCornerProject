@@ -1,0 +1,3 @@
+{# scatter visual. Payload contract: see src/viz/payloads.py:scatter() #}
+{% extends "base.html" %}
+{% block meta %}<div class="sc-meta">Dashed lines are the medians of the plotted group. {{ generated }}{% if source %} · {{ source }}{% endif %}</div>{% endblock %}

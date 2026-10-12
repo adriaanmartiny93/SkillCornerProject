@@ -1,0 +1,24 @@
+:root{
+/* Neutrals — warm-green charcoal, pulled from the reference's #252525 ink and green-tinted night pitch */
+--ink-950:#101210;--ink-900:#161917;--ink-850:#1c1f1d;--ink-800:#232624;--ink-750:#2a2e2b;--ink-700:#323733;--ink-600:#424843;--ink-500:#5d645e;--ink-400:#858c86;--ink-300:#aab0ab;--ink-200:#cfd3d0;--ink-100:#e8eae8;--ink-50:#f5f6f5;--white:#ffffff;
+/* Logo — sampled from the supplied wordmark */
+--brand-green:#33ff6a;--brand-black:#000000;--brand-white:#ffffff;
+/* Brand green — #00A82F is the reference's arrow/accent; 300 is the glowing pitch-line tone */
+--green-900:#0a2513;--green-800:#0d3a1b;--green-700:#006b1f;--green-600:#008a27;--green-500:#00a82f;--green-400:#1fd655;--green-300:#4cf07a;--green-200:#9df7b5;--green-100:#d6fbe0;
+/* Data series (ordered) */
+--series-1:#1fd655;--series-2:#33c3e8;--series-3:#f2b33d;--series-4:#f2665c;--series-5:#a191f2;--series-6:#aab0ab;
+/* Teams */
+--team-home:#1fd655;--team-away:#33c3e8;
+/* Semantic */
+--positive:#1fd655;--negative:#f2665c;--warning:#f2b33d;--info:#33c3e8;
+--positive-bg:rgba(31,214,85,.12);--negative-bg:rgba(242,102,92,.12);--warning-bg:rgba(242,179,61,.12);--info-bg:rgba(51,195,232,.12);
+/* Percentile ramp (0→100) */
+--pct-1:#f2665c;--pct-2:#f2913f;--pct-3:#f2c53d;--pct-4:#8fdc4a;--pct-5:#1fd655;
+/* Semantic aliases */
+--bg-app:var(--ink-900);--bg-sidebar:var(--ink-950);--surface-card:var(--ink-850);--surface-raised:var(--ink-800);--surface-hover:var(--ink-750);--surface-input:var(--ink-950);
+--border-subtle:var(--ink-750);--border-default:var(--ink-700);--border-strong:var(--ink-600);
+--text-primary:var(--ink-50);--text-secondary:var(--ink-300);--text-muted:var(--ink-400);--text-disabled:var(--ink-500);--text-on-accent:var(--ink-950);
+--accent:var(--green-400);--accent-strong:var(--green-500);--accent-hover:var(--green-300);--accent-press:var(--green-600);--accent-soft:rgba(31,214,85,.12);--accent-line:rgba(76,240,122,.55);
+--focus-ring:0 0 0 2px var(--ink-900),0 0 0 4px var(--green-400);
+--pitch-bg:#141a16;--pitch-line:rgba(76,240,122,.45);
+}

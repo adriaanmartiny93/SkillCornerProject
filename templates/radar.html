@@ -1,0 +1,3 @@
+{# radar visual. Payload contract: see src/viz/payloads.py:radar() #}
+{% extends "base.html" %}
+{% block meta %}<div class="sc-meta">Percentiles 0-100 against role peers in the same competition. {{ generated }}{% if source %} · {{ source }}{% endif %}</div>{% endblock %}

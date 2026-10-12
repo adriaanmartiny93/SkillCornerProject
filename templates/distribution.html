@@ -1,0 +1,3 @@
+{# distribution visual. Payload contract: see src/viz/payloads.py:distribution() #}
+{% extends "base.html" %}
+{% block meta %}<div class="sc-meta">Each dot is one player in the reference group. Hexagons mark the selected player(s). {{ generated }}{% if source %} · {{ source }}{% endif %}</div>{% endblock %}

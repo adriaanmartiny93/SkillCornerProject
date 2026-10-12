@@ -1,0 +1,21 @@
+profile,role,file,metric,weight
+Ball Winning Midfielder,DM,physical,timetohsr,0.1
+Ball Winning Midfielder,DM,pressure_engagements,count_indirect_regain_pressure,0.2
+Ball Winning Midfielder,DM,on_ball_engagements,count_direct_regain_recovery_press,0.2
+Ball Winning Midfielder,DM,on_ball_engagements,count_direct_regain_pressing,0.3
+Ball Winning Midfielder,DM,physical,explacceltohsr_count_full_otip,0.2
+Deep Lying Playmaker,DM,passes_to_off_ball_runs,count_completed_passes_coming_short_runs_in_build_up,0.1
+Deep Lying Playmaker,DM,line_breaking_passes,xthreat_completed_passes_through_first_line,0.3
+Deep Lying Playmaker,DM,line_breaking_options,xthreat_around_first_line,0.2
+Deep Lying Playmaker,DM,line_breaking_passes,xthreat_completed_passes_passing_option_in_build_up,0.4
+Box To Box Midfielder,CM,physical,hi_count_full_all,0.1
+Box To Box Midfielder,CM,physical,timetohsr_best3,0.2
+Box To Box Midfielder,CM,physical,psv99,0.1
+Box To Box Midfielder,CM,off_ball_runs,count_off_ball_runs_in_create,0.2
+Box To Box Midfielder,CM,off_ball_runs,xthreat_received_runs_ahead_of_the_ball,0.1
+Box To Box Midfielder,CM,line_breaking_options,xthreat_received_through_first_line_in_create,0.1
+Box To Box Midfielder,CM,passes_to_off_ball_runs,xthreat_completed_passes_overlap_in_create,0.2
+Mobile Striker,CF,physical,psv99_best3,0.35
+Mobile Striker,CF,physical,timetosprint_best3,0.25
+Mobile Striker,CF,off_ball_runs,xthreat_runs_in_behind,0.25
+Mobile Striker,CF,off_ball_runs,xthreat_targeted_off_ball_runs_in_finish,0.15

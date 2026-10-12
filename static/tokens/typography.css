@@ -1,0 +1,10 @@
+:root{
+--font-display:'Saira',system-ui,sans-serif;
+--font-body:'IBM Plex Sans',system-ui,sans-serif;
+--font-mono:'IBM Plex Mono',ui-monospace,monospace;
+--fs-display:48px;--fs-h1:32px;--fs-h2:24px;--fs-h3:18px;--fs-body:14px;--fs-body-lg:16px;--fs-sm:13px;--fs-xs:12px;--fs-eyebrow:11px;
+--fs-metric-lg:40px;--fs-metric:28px;
+--fw-regular:400;/* @kind font */--fw-medium:500;/* @kind font */--fw-semibold:600;/* @kind font */--fw-bold:700;/* @kind font */--fw-black:800;/* @kind font */
+--lh-tight:1.1;/* @kind font */--lh-snug:1.3;/* @kind font */--lh-body:1.5;/* @kind font */
+--ls-eyebrow:.14em;/* @kind font */--ls-display:-.01em;/* @kind font */--ls-caps:.06em;/* @kind font */
+}

@@ -1,0 +1,20 @@
+# App
+streamlit>=1.38
+
+# Data
+pandas>=2.2
+numpy>=1.26
+
+# Analytics
+scikit-learn>=1.5
+scipy>=1.13
+
+# Charts: HTML visuals use ECharts 5.5.1, bundled in components/sc_chart/ (no pip package).
+# plotly is only needed if you keep the older helpers in src/viz/charts.py.
+plotly>=5.22
+
+# Templating (standalone HTML exports)
+jinja2>=3.1
+
+# Export
+openpyxl>=3.1

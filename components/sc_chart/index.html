@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Bidirectional Streamlit component (no npm build). Receives {kind, payload, interactive}
+     via the streamlit:render message, draws with SC.render and returns clicks with setComponentValue. -->
+<style>
+@font-face{font-family:'Saira';font-weight:600;font-display:swap;src:url("/app/static/fonts/saira-600.woff2") format("woff2")}
+@font-face{font-family:'Saira';font-weight:700;font-display:swap;src:url("/app/static/fonts/saira-700.woff2") format("woff2")}
+@font-face{font-family:'IBM Plex Sans';font-weight:400;font-display:swap;src:url("/app/static/fonts/ibm-plex-sans-400.woff2") format("woff2")}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;font-display:swap;src:url("/app/static/fonts/ibm-plex-sans-600.woff2") format("woff2")}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;font-display:swap;src:url("/app/static/fonts/ibm-plex-mono-400.woff2") format("woff2")}
+html,body{margin:0;padding:0;background:transparent;overflow:hidden}
+</style>
+<script src="echarts.min.js"></script>
+<script src="sc_charts.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  function send(type, data) { window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type: type }, data || {}), '*'); }
+  function setHeight() { send('streamlit:setFrameHeight', { height: Math.ceil(document.documentElement.getBoundingClientRect().height) }); }
+  var last = '';
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (!d || d.type !== 'streamlit:render') return;
+    var a = d.args || {};
+    var sig = JSON.stringify([a.kind, a.payload, a.interactive]);
+    if (sig === last) return;   // Streamlit re-sends render on every rerun; skip if unchanged
+    last = sig;
+    var emit = a.interactive ? function (v) { send('streamlit:setComponentValue', { value: v, dataType: 'json' }); } : null;
+    SC.render(document.getElementById('root'), a.kind, a.payload || {}, emit);
+    setHeight();
+  });
+  new ResizeObserver(setHeight).observe(document.body);
+  if (document.fonts) document.fonts.ready.then(setHeight);
+  send('streamlit:componentReady', { apiVersion: 1 });
+})();
+</script>
+</body>
+</html>

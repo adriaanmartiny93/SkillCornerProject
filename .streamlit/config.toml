@@ -1,0 +1,86 @@
+[theme]
+base = "dark"
+primaryColor = "#1fd655"
+backgroundColor = "#161917"
+secondaryBackgroundColor = "#101210"
+textColor = "#f5f6f5"
+font = "IBM Plex Sans, sans-serif"
+headingFont = "Saira, sans-serif"
+codeFont = "IBM Plex Mono, monospace"
+
+# Local fonts for Streamlit's own elements (icons keep Streamlit's icon font)
+[[theme.fontFaces]]
+family = "Saira"
+url = "app/static/fonts/saira-400.woff2"
+weight = 400
+style = "normal"
+
+[[theme.fontFaces]]
+family = "Saira"
+url = "app/static/fonts/saira-500.woff2"
+weight = 500
+style = "normal"
+
+[[theme.fontFaces]]
+family = "Saira"
+url = "app/static/fonts/saira-600.woff2"
+weight = 600
+style = "normal"
+
+[[theme.fontFaces]]
+family = "Saira"
+url = "app/static/fonts/saira-700.woff2"
+weight = 700
+style = "normal"
+
+[[theme.fontFaces]]
+family = "Saira"
+url = "app/static/fonts/saira-800.woff2"
+weight = 800
+style = "normal"
+
+[[theme.fontFaces]]
+family = "IBM Plex Sans"
+url = "app/static/fonts/ibm-plex-sans-400.woff2"
+weight = 400
+style = "normal"
+
+[[theme.fontFaces]]
+family = "IBM Plex Sans"
+url = "app/static/fonts/ibm-plex-sans-500.woff2"
+weight = 500
+style = "normal"
+
+[[theme.fontFaces]]
+family = "IBM Plex Sans"
+url = "app/static/fonts/ibm-plex-sans-600.woff2"
+weight = 600
+style = "normal"
+
+[[theme.fontFaces]]
+family = "IBM Plex Sans"
+url = "app/static/fonts/ibm-plex-sans-700.woff2"
+weight = 700
+style = "normal"
+
+[[theme.fontFaces]]
+family = "IBM Plex Mono"
+url = "app/static/fonts/ibm-plex-mono-400.woff2"
+weight = 400
+style = "normal"
+
+[[theme.fontFaces]]
+family = "IBM Plex Mono"
+url = "app/static/fonts/ibm-plex-mono-500.woff2"
+weight = 500
+style = "normal"
+
+[[theme.fontFaces]]
+family = "IBM Plex Mono"
+url = "app/static/fonts/ibm-plex-mono-600.woff2"
+weight = 600
+style = "normal"
+
+[server]
+# Serves ./static at /app/static (fonts for styling.css and the chart component)
+enableStaticServing = true
