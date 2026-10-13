@@ -3215,3 +3215,5 @@ Pressure,recovery_press_engagements,avg_distance_covered_isolated_recovery_press
 Physical,physical,timetohsr_best3,Calculated,Mean of the best 3 match values of timetohsr,full,average of best x,,,False,True,timetohsr,custom,3
 Physical,physical,timetosprint_best3,Calculated,Mean of the best 3 match values of timetosprint,full,average of best x,,,False,True,timetosprint,custom,3
 Physical,physical,psv99_best3,Calculated,Mean of the best 3 match values of psv99,full,average of best x,,,False,False,psv99,custom,3
+Pressure,pressing_engagements,count_direct_regain_per_press,Calculated,"count_direct_regain_pressing divided by count_pressing, both summed over the season",full,ratio,,count_pressing,True,False,count_direct_regain_pressing,custom,0
+Pressure,pressing_engagements,count_indirect_regain_per_press,Calculated,"count_indirect_regain_pressing divided by count_pressing, both summed over the season",full,ratio,,count_pressing,True,False,count_indirect_regain_pressing,custom,0

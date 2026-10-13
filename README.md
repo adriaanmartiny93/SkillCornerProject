@@ -148,10 +148,10 @@ Validate the resulting ranking against the coaching staff's intuition.
 .
 ├── app.py                  # Streamlit entry point
 ├── .streamlit/config.toml  # dark base theme, green primary colour
-├── pages/                  # 0_Metric_Catalogue, 1_Benchmarks, 2_Profile_Builder, 9_Design_Demo; later Team_Benchmarks, Squad_Importance, Replacement_Finder
+├── pages/                  # 0_Metric_Catalogue, 1_Benchmarks, 2_Profile_Builder, 3_Player_Profile, 9_Design_Demo; later Team_Benchmarks, Squad_Importance, Replacement_Finder
 ├── src/
 │   ├── data/               # loading, joining, normalisation, role mapping
-│   ├── benchmarks/         # engine.py (percentile, z-score, profile score), profiles.py (profiles, correlations); later team style/quality, PCA, clustering
+│   ├── benchmarks/         # engine.py (percentile, z-score, profile score), profiles.py (profiles, correlations), usefulness.py (events per match per metric and role), strengths.py (mean and spread per competition, role and metric; strongest metrics of a player); later team style/quality, PCA, clustering
 │   ├── importance/         # importance index components
 │   ├── similarity/         # feature sets, weighting, distance, explainability
 │   └── viz/                # theme.py (inject_theme, HTML helpers), payloads.py (payload builders), visuals.py (show, export), charts.py (older Plotly helpers)

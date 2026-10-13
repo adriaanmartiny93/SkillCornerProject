@@ -53,16 +53,25 @@
   function radar(el, p, emit) {
     var o = opt(p), C = cols(p), S = p.data || [], dashed = o.dashed || [];
     var first = {}; (p.labels || []).forEach(function (a, i) { first[a] = S[0] ? S[0].values[i] : null; });
+    // Long axis names are wrapped on word boundaries, otherwise they run past the edge of the canvas.
+    function wrap(n) {
+      var lines = [''];
+      n.split(' ').forEach(function (w) {
+        var k = lines.length - 1;
+        if (lines[k] && (lines[k] + ' ' + w).length > 18) lines.push(w); else lines[k] = lines[k] ? lines[k] + ' ' + w : w;
+      });
+      return lines.join('\n');
+    }
     var c = mount(el, o.height || 420);
     c.setOption({
       tooltip: Object.assign({ trigger: 'item' }, tooltip),
       legend: S.length > 1 ? legend : { show: false },
       radar: {
         indicator: (p.labels || []).map(function (a) { return { name: a, max: 100, min: 0 }; }),
-        center: ['50%', S.length > 1 ? '47%' : '52%'], radius: '66%', splitNumber: 4, shape: 'polygon',
+        center: ['50%', S.length > 1 ? '47%' : '52%'], radius: '58%', splitNumber: 4, shape: 'polygon',
         axisName: {
           color: T.i300, fontFamily: DISP, fontSize: 11, fontWeight: 600,
-          formatter: function (n) { return o.show_values && first[n] != null ? n.toUpperCase() + '\n{v|' + Math.round(first[n]) + '}' : n.toUpperCase(); },
+          formatter: function (n) { var t = wrap(n.toUpperCase()); return o.show_values && first[n] != null ? t + '\n{v|' + Math.round(first[n]) + '}' : t; },
           rich: { v: { fontFamily: MONO, fontSize: 12, color: C[0], padding: [4, 0, 0, 0] } }
         },
         axisLine: { lineStyle: { color: T.i700 } },

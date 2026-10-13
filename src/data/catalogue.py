@@ -196,3 +196,71 @@ def _physical_row(metric: str) -> dict | None:
         return {**row, "calculation": "average", "weight": f"minutes_{scope}_{phase}"}
     per = "90" if phase == "all" else f"30 {phase.upper()}"
     return {**row, "calculation": "total", "per": per}
+
+
+# Parts of a metric name: <measure>_<qualifier>_<action>_<phase or block>.
+_PHASE = r"_(?:in_)?(build_up|create|finish|transition|high_block|medium_block|low_block)$"
+# Longest first: "isolated_pressing" before "pressing", "all_possessions" before "possessions".
+_ACTIONS = sorted(
+    [
+        "off_ball_runs", "coming_short_runs", "cross_receiver", "dropping_off_runs", "overlap_runs", "overlap",
+        "pulling_half_space_runs", "pulling_wide_runs", "runs_ahead_of_the_ball", "runs_in_behind", "support_runs",
+        "underlap_runs", "passing_option", "around_first_line", "around_second_last_line", "around_last_line",
+        "through_first_line", "through_second_last_line", "through_last_line", "on_ball_engagements", "pressing",
+        "pressure", "counter_press", "recovery_press", "other", "isolated_engagement", "isolated_pressing",
+        "isolated_pressure", "isolated_counter_press", "isolated_recovery_press", "all_possessions",
+        "possession_retentions", "possessions",
+    ],
+    key=len,
+    reverse=True,
+)
+_PHYSICAL_PHASE = {"tip": "in possession", "otip": "out of possession"}
+_ALL_PHASES = "all phases"
+
+
+def metric_parts(catalogue: pd.DataFrame) -> pd.DataFrame:
+    """The catalogue with `action`, `measure` and `phase`, by rule from the metric name.
+
+    A calculated metric takes them from its source. Not stored: the parts are
+    only used to narrow down the choice of metrics.
+    """
+    parts = [_parts(file, source) for file, source in zip(catalogue["file"], catalogue["source"])]
+    return catalogue.assign(**pd.DataFrame(parts, columns=["action", "measure", "phase"], index=catalogue.index))
+
+
+def _parts(file: str, metric: str) -> tuple[str, str, str]:
+    if file == "physical":
+        suffix = metric.rsplit("_", 1)[-1]
+        return "physical", "Intensity", _PHYSICAL_PHASE.get(suffix, _ALL_PHASES)
+    match = re.search(_PHASE, metric)
+    phase = match.group(1).replace("_", " ") if match else _ALL_PHASES
+    rest = re.sub(_PHASE, "", metric)
+    action = next((a for a in _ACTIONS if rest.endswith(a)), "other")
+    action = "overlap runs" if action == "overlap" else action.replace("_", " ")
+    return action, _measure(metric), phase
+
+
+def _measure(metric: str) -> str:
+    """What a metric says about a player; the first rule that matches."""
+    if "beaten_by" in metric:
+        return "Lost duels"
+    if metric.startswith("xthreat_"):
+        return "Threat"
+    if metric.startswith("xpass_") or "_dangerous_" in metric or "_difficult_" in metric:
+        return "Difficulty and danger"
+    if metric.startswith("avg_") or re.search(r"_(hsr|sprint|above_hsr)_|carry_at_speed", metric):
+        return "Intensity"
+    if re.search(
+        r"regain|disruption|force_backward|possession_danger|affected_line_break|completed_passes|_received_|retentions",
+        metric,
+    ):
+        return "Success"
+    if re.search(
+        r"start_close|got_close|goal_side|consecutive|pressing_chain|trajectory_forward|center_channel|wide_channel"
+        r"|open_space|tight_space",
+        metric,
+    ):
+        return "Positioning"
+    if re.search(r"_targeted_|pass_attempts", metric):
+        return "Involvement"
+    return "Volume"

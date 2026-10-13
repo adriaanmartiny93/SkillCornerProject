@@ -6,16 +6,21 @@ import streamlit as st
 
 from src.benchmarks import engine
 from src.benchmarks.profiles import STRONG_CORRELATION, delete_profile, load_profiles, save_profile, strong_pairs
+from src.benchmarks.usefulness import DEFAULT_MIN_EVENTS, events_per_match
 from src.data import foundation, loaders
-from src.data.catalogue import load_catalogue
+from src.data.catalogue import load_catalogue, metric_parts
 from src.data.roles import role_positions
 from src.viz.theme import inject_theme
 
 cached_player_matches = st.cache_data(foundation.player_matches)
 cached_load_derived = st.cache_data(loaders.load_derived)
 cached_benchmark = st.cache_data(engine.benchmark)
+cached_events = st.cache_data(events_per_match)
 
 NEW = "New profile"
+ALL = "All"
+# The order of the boxes: each one is limited by the ones before it.
+FILTERS = {"Category": "category", "Action": "action", "Measure": "measure", "Phase / block": "phase"}
 
 st.set_page_config(page_title="Profile Builder", layout="wide")
 inject_theme()
@@ -31,11 +36,13 @@ if seasons_path is None:
     st.stop()
 seasons = cached_load_derived(seasons_path)
 
-catalogue = load_catalogue()
+catalogue = metric_parts(load_catalogue())
 catalogue = catalogue[catalogue["scope"] == "full"]
-labels = (catalogue["file"] + " / " + catalogue["metric"]).tolist()
+catalogue = catalogue.assign(label=catalogue["file"] + " / " + catalogue["metric"])
+labels = catalogue["label"].tolist()
 metric_of = dict(zip(labels, zip(catalogue["file"], catalogue["metric"])))
 roles = list(role_positions())
+st.session_state.setdefault("metrics", [])
 
 
 def weight_key(label: str) -> str:
@@ -60,6 +67,12 @@ def equal_weights():
         st.session_state[weight_key(label)] = 1 / len(st.session_state["metrics"])
 
 
+def add_metric():
+    label = st.session_state.get("candidate")
+    if label and label not in st.session_state["metrics"]:
+        st.session_state["metrics"] = [*st.session_state["metrics"], label]
+
+
 def delete_picked():
     delete_profile(st.session_state["picked"])
     st.session_state["picked"] = NEW
@@ -71,18 +84,70 @@ c1, c2, c3 = st.columns(3)
 picked = c1.selectbox("Profile", [NEW, *sorted(profiles["profile"].unique())], key="picked", on_change=load_picked)
 role = c2.selectbox("Role", roles, key="role")
 name = c3.text_input("Profile name", key="name").strip()
-chosen = st.multiselect(
-    "Metrics",
-    labels,
-    key="metrics",
-    help="Every full-match metric of the catalogue, raw and calculated. Type to search.",
-)
 if picked != NEW:
     st.button("Delete this profile", on_click=delete_picked)
 
+# Events per match behind each metric, for the median player of this role. Physical metrics have none.
+events = cached_events(seasons, cached_player_matches())
+events = events[events["role"] == role]
+events_of = dict(zip(events["file"] + " / " + events["metric"], events["events_per_match"]))
+
+st.subheader("Add metrics")
+c1, c2 = st.columns([1, 3])
+min_events = c1.number_input(
+    "Minimum events per match",
+    min_value=0.0,
+    value=DEFAULT_MIN_EVENTS,
+    step=0.1,
+    help="A metric is useful for a role if the median player of that role, with enough matches, has at "
+    "least this many of the events behind it per match. Physical metrics are always useful.",
+)
+useful_only = c2.checkbox("Useful metrics only", value=True)
+
+# A pressure metric that is in several files is listed once, from on_ball_engagements if it is there.
+first = (catalogue["file"] != "on_ball_engagements").to_numpy().argsort(kind="stable")
+options = catalogue.iloc[first].drop_duplicates(["category", "metric"]).sort_index()
+if useful_only:
+    options = options[options["label"].map(events_of).fillna(min_events) >= min_events]
+for box, (title, column) in zip(st.columns(len(FILTERS)), FILTERS.items()):
+    choices = options[column].drop_duplicates().tolist()
+    choice = box.selectbox(title, choices if column == "category" else [ALL, *choices], key=f"filter::{column}")
+    if choice != ALL:
+        options = options[options[column] == choice]
+
+
+def metric_label(label: str) -> str:
+    name = metric_of[label][1]
+    return f"{name} ({events_of[label]:.2f} per match)" if label in events_of else name
+
+
+c1, c2 = st.columns([4, 1], vertical_alignment="bottom")
+c1.selectbox(
+    f"Metric ({len(options)} to choose from)",
+    options["label"].tolist(),
+    key="candidate",
+    format_func=metric_label,
+    help="Type to search. In brackets: events per match of the median player of this role.",
+)
+c2.button("Add to profile", on_click=add_metric, disabled=options.empty)
+
+chosen = st.multiselect(
+    "Metrics in this profile",
+    st.session_state["metrics"],
+    key="metrics",
+    help="Remove a metric here. Add one with the boxes above.",
+)
 if not chosen:
-    st.info("Pick one or more metrics.")
+    st.info("Add one or more metrics.")
     st.stop()
+
+rare = [label for label in chosen if events_of.get(label, min_events) < min_events]
+if rare:
+    st.warning(
+        f"Fewer than {min_events:g} events per match for the median player in role {role}. "
+        "Scores on these metrics are built on few events.\n\n"
+        + "\n".join(f"- {label}: {events_of[label]:.2f} per match" for label in rare)
+    )
 
 st.subheader("Weights")
 st.button("Equal weights", on_click=equal_weights)

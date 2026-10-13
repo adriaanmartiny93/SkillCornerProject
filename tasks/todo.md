@@ -989,7 +989,7 @@ To note:
 
 Prompt: "To-do: 'player profile' page. 1. conditional selecting of season --> competition --> role --> player. 2. show index scores for different profiles for that role (if there are any). 3. show per metric category what the strengths and weaknesses are for this player --> eg for ALL metrics: calculate z-scores for that player with the given filters (season and competition and role) for all metrics so we can sort through them and explore."
 
-Status: plan written, waiting for the user to verify. No code changed.
+Status: not built. Replaced by Task 18 (2026-10-13), which has a new set of sections for this page. The plan below is kept for reference only.
 
 ### What is there already
 
@@ -1053,7 +1053,745 @@ New page `pages/3_Player_Profile.py`. No change to the engine or the data layer,
 
 ---
 
-## Where we are (end of session 2026-10-12)
+## Task 13 - Profile Builder: metric types, conditional dropdowns, useful-metric filter (2026-10-13)
+
+Prompt: "Let's first look at the profile builder page. There are so many metrics that it's not easy to use the metrics search and multi select. Can we: 1. First define what types of metrics we might want to add to the profile. 2. make conditional dropdowns for the selection of metrics. Also --> some metrics might have low numbers of rows leading to outliers for certain positions --> let's filter the amount of metrics beforehand. can we devise a logic for deciding if a metric is usefull yes / no?"
+
+Status: done and staged, nothing committed. Plan verified by the user on 2026-10-13 (answers below the decisions). The browser check is for the user. Task 12 (player profile page) stays on hold until this is done.
+
+### What was found
+
+Metric names are built from fixed parts, so they can be split by rule:
+
+`<measure>_<qualifier>_<action>_<phase or block>`, for example `xthreat` + `received` + `runs_in_behind` + `in_finish`.
+
+| Part | Values |
+|---|---|
+| Action, off-ball runs (11) | all runs, coming short, cross receiver, dropping off, overlap, pulling half space, pulling wide, runs ahead of the ball, runs in behind, support, underlap |
+| Action, passing options and line-breaking passes (7) | all options, around / through the first, second-last and last line |
+| Action, pressure (7) | all on-ball engagements, pressing, pressure, counter press, recovery press, other, isolated |
+| Action, possessions (3) | all possessions, possessions (per phase), possession retentions |
+| Phase or block | all, build up, create, finish, transition; high, medium, low block |
+
+- Two naming oddities, to be handled in the rule: `..._overlap_in_create` is the same action as `..._overlap_runs`, and some names leave out "in" (`..._around_first_line_create`).
+- 94 pressure metric names are in more than one of the five pressure files. Checked on three of them: the values are equal in 99.9 to 100% of the rows.
+
+How often the events behind a metric happen (measured for all 3,075 event metrics x 7 roles, reference players only, included matches only; takes 5 seconds for everything):
+
+- In 7,485 of the 21,525 metric x role combinations, more than half of the reference players never have the event in the whole season.
+- Three metrics in the stored profiles are of this kind:
+
+  | Profile | Metric | Events per match (median player of the role) |
+  |---|---|---|
+  | Ball Winning Midfielder (DM) | `count_direct_regain_pressing` | 0.09 |
+  | Deep Lying Playmaker (DM) | `count_completed_passes_coming_short_runs_in_build_up` | 0 |
+  | Box To Box Midfielder (CM) | `xthreat_completed_passes_overlap_in_create` | 0 |
+
+### Part 1 - Proposed metric types
+
+Every metric gets one type, by rule from its name. Tested: the rule below assigns all 3,123 full-match metrics.
+
+| Type | What it says about a player | Name parts | Metrics |
+|---|---|---|---|
+| Volume | how often he does it | plain counts, pass opportunities, options by teammates | 259 |
+| Involvement | how often he is looked for, or tries | `targeted`, `pass_attempts` | 134 |
+| Success | how often it works | `received`, `completed_passes`, regains, disruptions, force backward, stop / reduce danger, retentions | 416 |
+| Lost duels (lower is better) | how often he is beaten | `beaten_by` | 66 |
+| Threat | how dangerous it is | `xthreat` | 402 |
+| Difficulty and danger | how hard or how dangerous the actions are | `dangerous`, `difficult`, `xpass_completion` | 1,206 |
+| Positioning | where and how he does it | centre / wide channel, start close, got close, goal side, consecutive, pressing chain, open / tight space | 357 |
+| Intensity | speed and physical load | all physical metrics, `hsr`, `sprint`, `above_hsr`, `avg_speed`, `avg_distance` | 283 |
+
+### Part 2 - Proposed dropdowns
+
+Five boxes in a row, each limited by the ones before, each with "All" as first choice:
+
+Category -> Action -> Type -> Phase / block -> Metric
+
+- The last box then holds a short list (usually under 20), each line with its events per match for the chosen role.
+- An "Add to profile" button puts the metric in the profile. The existing "Metrics" box stays, but only as the list of metrics in the profile (to remove one); it no longer lists the whole catalogue.
+- A pressure metric that is in several files is shown once.
+- The role box moves above the dropdowns, because the useful-metric filter depends on the role.
+
+### Part 3 - Proposed logic for "useful yes / no"
+
+Per metric and role, one number: the events per match of the median reference player of that role (all five competitions together, included matches only).
+
+- "Events" is the count behind the metric: the metric itself for a count, the matching `count_...` column for an `xthreat` metric, and the weight column for a ratio or an average (so `xpass_completion_...` and `avg_speed_...` are judged on how many passes or runs they are built from).
+- Useful = at least 0.5 events per match (one every two matches). The value is a field on the page.
+- Physical metrics are always useful: they are measured in every match.
+
+Effect of the threshold (event metrics that stay, out of 3,075):
+
+| Role | 0.25 | 0.5 | 1 |
+|---|---|---|---|
+| CB | 913 | 717 | 483 |
+| FB/WB | 1,493 | 1,101 | 719 |
+| DM | 1,334 | 983 | 668 |
+| CM | 1,431 | 1,074 | 712 |
+| AM | 1,547 | 1,211 | 863 |
+| W | 1,489 | 1,150 | 807 |
+| CF | 1,259 | 953 | 715 |
+
+On the page: a tick box "Useful metrics only" (on by default) and the threshold field. A metric that is already in a profile and is not useful stays in the profile and gets a warning line, like the strong correlations.
+
+### Plan
+
+- [x] Read the Profile Builder, the catalogue and the engine; split the metric names; measure the events per match for every metric and role
+- [x] Write this plan
+- [x] Plan verified by user
+- [x] `src/data/catalogue.py`: `metric_parts` adds the columns `action`, `kind` (the type) and `phase` to the catalogue by rule from the name; a calculated metric takes them from its source
+- [x] `src/benchmarks/usefulness.py`: one function that returns events per match per metric and role
+- [x] `pages/2_Profile_Builder.py`: role first; the five dropdowns with "Add to profile"; "Useful metrics only" and the threshold; warning for profile metrics that are not useful
+- [x] Verify: every metric has an action, type and phase; hand check of the events per match for one metric and role; headless app test of the page (no browser)
+- [x] Stage the changes, add the review section, update `docs/activity.md`
+
+### Decisions
+
+1. The eight types. Proposed: as in the table of Part 1. Say which to merge, split or rename. "Difficulty and danger" is the largest (1,206); it can be split into "Dangerous", "Difficult" and "Expected completion".
+2. Order of the dropdowns. Proposed: Category, Action, Type, Phase / block, Metric. Alternative: Type first, if you think "I want a threat metric" before "I want a runs metric".
+3. Where the parts are kept. Proposed: calculated from the name each time, not stored in `data/metric_catalogue.csv`, so the stored file does not change. Alternative: three new columns in the stored catalogue, editable on the catalogue page.
+4. Threshold. Proposed: 0.5 events per match for the median player of the role, changeable on the page. Alternative rule: a share of players, for example "at least 90% of the reference players have the event at least once"; simpler to explain, but it lets through events that happen once or twice a season.
+5. Reference for the rule. Proposed: per role over all five competitions together, so a metric is useful or not for a role, the same in every league. Alternative: per role and competition, which is closer to how z-scores are calculated but gives a different metric list per league.
+6. Not-useful metrics. Proposed: hidden from the dropdowns while the tick box is on; never removed from a stored profile.
+7. Duplicate pressure metrics. Proposed: show each name once, taken from `on_ball_engagements` when it is there. Stored profiles that point to another file keep working.
+8. Scope. Proposed: the Profile Builder only. The same filter could later be used on the player profile page (Task 12, decision 5) and in the Metric Catalogue.
+
+Answers ("go"):
+
+1. "types are simply the metric categories. Within those, we can indeed use logic to filter further." Read as: the type of a metric is its category (Physical, Possessions, Off-ball runs, Passing options, Passing, Pressure). The eight groups of Part 1 are not called types; they stay as one of the filters inside a category, under the name "Measure".
+2. Category first.
+3. Parts calculated from the name, not stored.
+4. Threshold 0.3 events per match (not 0.5).
+5. Per role, all five competitions together.
+6. Hidden behind the tick box; never removed from a stored profile.
+7. Each duplicate pressure metric shown once.
+8. Profile Builder only.
+
+### Review (Task 13)
+
+Changes made:
+
+- `src/data/catalogue.py`: `metric_parts` adds three columns to the catalogue, by rule from the metric name: `action` (for example "runs in behind"), `measure` (one of the eight groups of Part 1) and `phase` (a phase of play, a block, or "all phases"). Nothing is stored; `data/metric_catalogue.csv` is unchanged.
+- `src/benchmarks/usefulness.py` (new): `events_per_match` gives, per event metric and role, the events per match of the median reference player. Default threshold 0.3.
+- `pages/2_Profile_Builder.py`: the box with all 3,123 metrics is gone. New section "Add metrics":
+  - "Minimum events per match" (0.3) and the tick box "Useful metrics only" (on).
+  - Five boxes, each limited by the ones before: Category, Action, Measure, Phase / block, Metric. The Metric box shows how many metrics are left and, per metric, its events per match for the chosen role.
+  - "Add to profile" puts the metric in "Metrics in this profile", where a metric can be removed.
+  - A warning lists the metrics in the profile that are below the threshold for the role.
+- `README.md`: `usefulness.py` in the folder list.
+
+Weights, correlations and Save are unchanged.
+
+Verified by Claude (no browser):
+
+- Every one of the 3,126 full-match metrics gets an action, a measure and a phase; no event metric falls back to a default.
+- Hand check from the raw CSV: `count_direct_regain_pressing` for DM is 0.091 events per match, equal to the function.
+- Metrics that stay at 0.3, out of 3,075 event metrics: CB 852, CF 1,163, DM 1,237, CM 1,316, W 1,395, FB/WB 1,402, AM 1,437.
+- Headless app test of the Profile Builder: the boxes narrow down (DM, Pressure, pressing, Success: 6 metrics; with the tick box off: 25); add, add the same one twice (no duplicate) and remove work; a role change that takes away the chosen action does not break the page; opening "Deep Lying Playmaker" loads its four metrics and shows the warning for the one below the threshold. `data/profiles.csv` is byte-identical to before the test.
+- Headless app test: the main page, Metric Catalogue and Benchmarks still run without errors. One run of the main page timed out after 120 seconds in a test process that had run other pages before it; run on its own it takes 2 seconds, with and without this task's changes.
+
+Not verified: how the page looks in the browser, and typing in the boxes.
+
+Check it yourself:
+
+```bash
+source .venv/bin/activate
+streamlit run app.py
+```
+
+Open "Profile Builder". Pick role CF, then Off-ball runs, runs in behind, Threat, all phases: three metrics are left. Add one. Switch the role to CB with category Off-ball runs: "runs in behind" is no longer in the Action box, because no such metric reaches 0.3 events per match for centre-backs. Open the profile "Deep Lying Playmaker" to see the warning.
+
+To note:
+
+- Decision 1 as built: the six categories are the types and the first box. The eight groups are the third box, "Measure". Say so if you want that box out or its groups changed.
+- The Action, Measure and Phase boxes only list values that still have a metric after the earlier boxes and the useful filter, so the lists differ per role.
+- Three stored profile metrics are below 0.3 for their role: `count_direct_regain_pressing` (DM, 0.09), `count_completed_passes_coming_short_runs_in_build_up` (DM, 0) and `xthreat_completed_passes_overlap_in_create` (CM, 0). They are not removed; the page warns.
+- The rule looks at the median player. A metric can pass and still have players with very few events; and a ratio or average is judged on the events it is divided by, not on how often its outcome happens.
+- A metric built with "average of best x" on an event column is judged on that column's events per match.
+- Category "Passing" holds two files, so its Action box lists both the run types and the lines (18 values).
+- A pressure metric that is in several files is offered once, from `on_ball_engagements` when it is there. Stored profiles that point to another pressure file still load.
+- The events per match are calculated when the page opens (about 4 seconds the first time, then kept in memory) and again after the player table is recalculated.
+- The threshold is a field on the page and is not stored with the profile.
+- Nothing is committed; the changes are staged for review.
+
+---
+
+## Task 14 - Search field above the Metric Catalogue table (2026-10-13)
+
+Prompt: "add an option to search to the dataframe/table in metric catalogue."
+
+Status: done and staged, nothing committed. The browser check is for the user. Built without a separate plan check, because it is one field on one page.
+
+### What was found
+
+The page already had a search field, but in the sidebar, at the bottom of the filters ("Search in metric name or definition"), and it only matched one literal piece of text.
+
+### Plan
+
+- [x] `pages/0_Metric_Catalogue.py`: the search field moved from the sidebar to right above the table of the general catalogue
+- [x] The search looks in category, file, metric name, type and definition; several words must all be found; an underscore counts as a space
+- [x] Headless app test (no browser); stage; update `docs/activity.md`
+
+### Review
+
+Changes made:
+
+- `pages/0_Metric_Catalogue.py` only. "Search the table" is the first thing in the "General catalogue" tab. It works together with the sidebar filters, and the "Metrics shown" tile counts the result.
+
+Verified by Claude (no browser): with no search 3,123 metrics; "regain pressing high block" gives 2, "count_direct_regain_pressing" 12, "Physical psv99" 1, a nonsense word 0. Save with a search active works and leaves `data/metric_catalogue.csv` unchanged when nothing was edited.
+
+To note:
+
+- The table of the "Calculated season metrics" tab has no search field (it holds three metrics).
+- As before: unsaved edits in the table are lost when the search or a filter changes.
+- Streamlit's own table search is still there too: the magnifier icon top right when the mouse is over the table. It only marks cells; it does not filter the rows.
+- Nothing is committed; the change is staged for review.
+
+---
+
+## Task 15 - Catalogue rebuilt after a raw file was removed (2026-10-13)
+
+Prompt: "i removed one of the source files. Rebuild metric catalogue accordingly."
+
+Status: undone by Task 16: the file came back and the catalogue was rebuilt again.
+
+### What was found
+
+- The removed file is `data/raw/pressing_engagements.csv`. 12 CSVs are left, 10 of them metric files.
+- The list of metric files is fixed in `src/data/inventory.py`. With the file gone, a rebuild of the catalogue and the File inventory tab would have failed on it.
+- No stored profile and no calculated metric points to the removed file.
+
+### Plan
+
+- [x] `src/data/inventory.py`: `pressing_engagements` taken out of the list of metric files (one line)
+- [x] Compare a fresh rebuild with the stored catalogue, then store the rebuild in `data/metric_catalogue.csv`
+- [x] Headless app test of all pages (no browser); stage; update `docs/activity.md`
+
+### Review
+
+Changes made:
+
+- `src/data/inventory.py`: one line removed.
+- `data/metric_catalogue.csv`: 95 rows of `pressing_engagements` removed. 3,216 metrics before, 3,121 now (3,118 raw and the 3 calculated ones).
+
+Verified by Claude (no browser):
+
+- The rows of the other files in the rebuilt catalogue are identical to the stored ones, so no saved edit was lost by the rebuild.
+- The File inventory lists 12 files; the events-per-match calculation runs over the 9 remaining event files; the main page, Metric Catalogue, Benchmarks and Profile Builder run without errors. The Metric Catalogue shows 3,028 full-match metrics.
+
+To note:
+
+- 38 of the 95 metrics are still available from another pressure file under the same name (for example `count_direct_regain_pressing` in `on_ball_engagements`).
+- 57 metrics existed only in the removed file and are gone: pressing split by block (`..._pressing_in_high_block`, `..._pressing_in_medium_block`, 38 metrics) and isolated pressing (`..._isolated_pressing`, 19 metrics). `on_ball_engagements` has no pressing-per-block or isolated-pressing columns.
+- The numbers in the earlier tasks of this file (13 CSVs, 3,213 or 3,123 metrics, 21,525 metric x role combinations, the metrics-left tables of Task 13) describe the data before this removal and were not rewritten.
+- The older benchmark files in `data/derived/` were not touched; the newest one holds no column of the removed file.
+- A copy of the catalogue from before the rebuild is in Claude's scratch folder for this session only; the committed version in git is the lasting copy.
+- Nothing is committed; the changes are staged for review. `data/profiles.csv` still has the user's own unstaged change.
+
+---
+
+## Task 16 - Catalogue rebuilt again, the raw file is back (2026-10-13)
+
+Prompt: "rebuild again" (with `data/raw/pressing_engagements.csv` open in the editor).
+
+Status: done and staged, nothing committed.
+
+### What was found
+
+`data/raw/pressing_engagements.csv` is back in `data/raw/` (written at 19:59): 45,865 rows, 99 columns, 1,622 matches, the same as on 2026-10-10. 13 CSVs again, 11 of them metric files.
+
+### Plan
+
+- [x] `src/data/inventory.py`: `pressing_engagements` back in the list of metric files
+- [x] Rebuild the catalogue and store it in `data/metric_catalogue.csv`
+- [x] Headless app test of all pages (no browser); stage; update `docs/activity.md`
+
+### Review
+
+Changes made: Task 15 is undone. `src/data/inventory.py` and `data/metric_catalogue.csv` are equal to the last commit again. The catalogue has 3,216 metrics (3,213 raw and the 3 calculated ones).
+
+Verified by Claude (no browser):
+
+- The rebuilt catalogue is identical to the copy taken before the removal. The 95 metrics of `pressing_engagements` are back, including the 57 that only exist in that file; the rows of the other files did not change.
+- The File inventory lists 13 files; the main page, Metric Catalogue, Benchmarks and Profile Builder run without errors. The Metric Catalogue shows 3,123 full-match metrics.
+
+To note:
+
+- Whether the file that came back is byte for byte the old one could not be checked, because no copy of the old file exists. Rows, columns and matches are the same.
+- Nothing is committed; the changes are staged for review. `data/profiles.csv` still has the user's own unstaged change.
+
+---
+
+## Task 17 - Empty profile scores on the Benchmarks page (2026-10-13)
+
+Prompt: screenshot of the Benchmarks page (profile "Ball Winning Midfielder", BEL - Pro League, z-score: "profile score" and "score percentile" are None for every player), with "empty score categories".
+
+Status: done and staged, nothing committed. Plan verified by the user ("go", the three decisions as proposed). The profile itself is still to be changed by the user.
+
+### Cause
+
+- A profile score is the weighted mean of the z-scores of all metrics of the profile. A player without a z-score for one of them gets no score.
+- One metric of the profile, `count_beaten_by_movement_per_press` (`count_beaten_by_movement_pressing` divided by `count_pressing`), has no z-score in four of the five competitions. A z-score needs a spread between the reference players, and there is none: every reference DM has the value 0.
+
+  | Competition | Reference DMs | With a value above 0 |
+  |---|---|---|
+  | BEL - Pro League | 34 | 0 |
+  | DEN - Superliga | 20 | 0 |
+  | ENG - Championship | 79 | 0 |
+  | ENG - Premier League | 53 | 0 |
+  | NED - Eredivisie | 57 | 1 |
+
+- In the raw file the event `count_beaten_by_movement_pressing` happens 8 times in the whole season, for all players of all five leagues together, against 314,716 presses. So 57 of the 243 reference DMs have a profile score (the Eredivisie), 186 have none.
+- The same profile also holds `count_beaten_by_possession_per_press`: 157 events in the whole data; in Belgium 2 of 34 DMs are above 0. It has a z-score, but almost everyone has the same one.
+- Why the Profile Builder did not warn: the useful yes / no rule of Task 13 judges a ratio on the column it is divided by (7.1 presses per match for a DM), not on how often the outcome happens. This was listed under "To note" in Task 13 and is the gap here.
+- The other three profiles are not affected (Mobile Striker: 230 of 231 players have a score).
+
+### Proposed fix
+
+1. Useful yes / no rule (`src/benchmarks/usefulness.py`): a calculated ratio is judged on its outcome (the column above the line) instead of the column it is divided by. Both metrics above then show 0.00 events per match for DM, are hidden in the Profile Builder while "Useful metrics only" is on, and get the warning in a stored profile.
+2. Benchmarks page (`pages/1_Benchmarks.py`): when a metric of the profile has no z-score in a competition, a warning names the metric and the competitions, so an empty score column is explained on the page.
+3. The profile itself: replace the two metrics in the Profile Builder. That is for the user. A candidate that does happen: `count_beaten_by_movement_on_ball_engagements` (13,242 events), or a ratio of it per on-ball engagement.
+
+### Plan
+
+- [x] Find the cause in the stored benchmarks and the raw file
+- [x] Write this plan
+- [x] Plan verified by user
+- [x] `src/benchmarks/usefulness.py`: calculated ratios judged on their outcome column
+- [x] `pages/1_Benchmarks.py`: warning that names profile metrics without a z-score, per competition
+- [x] Verify: the two metrics show 0.00 events per match for DM; headless app test of the Benchmarks page and the Profile Builder (no browser)
+- [x] Stage the changes, add the review section, update `docs/activity.md`
+
+### Decisions
+
+1. What a metric without spread does to the score. Proposed: nothing changes in the calculation; the score stays empty and the page says why (fix 2). A score that silently leaves out a metric looks complete but is not the profile that was defined. Alternative: give every player the z-score 0 for such a metric (everyone is average), so the score exists; that metric then adds nothing in that competition.
+2. The raw ratios in the catalogue (`xpass_completion_...`) stay judged on the count they are divided by: their top line is a sum of probabilities, not a number of events. Proposed: yes.
+3. Fix 3 (changing the profile): by the user in the app. Say so if Claude should change `data/profiles.csv` instead.
+
+### Review (Task 17)
+
+Changes made:
+
+- `src/benchmarks/usefulness.py`: a calculated ratio is judged on its outcome column, no longer on the column it is divided by. Raw ratios (`xpass_completion_...`) and averages are judged as before.
+- `pages/1_Benchmarks.py`: a warning above the table names every profile metric that has no z-score in a competition, with those competitions. It follows the Competition box.
+- The score calculation is unchanged: a player without a z-score for one metric still gets no profile score.
+
+Verified by Claude (no browser):
+
+- Events per match for DM: `count_beaten_by_movement_per_press` 0.00 and `count_beaten_by_possession_per_press` 0.00 (both were 7.14), `count_direct_regain_per_press` 0.09, `count_indirect_regain_per_press` 0.55. A raw ratio is unchanged (`xpass_completion_passing_option` 113).
+- Headless app test, Benchmarks: "Ball Winning Midfielder" shows the warning for `count_beaten_by_movement_per_press` in the four competitions; with only the Eredivisie picked there is no warning, with only Belgium it names Belgium. The other three profiles show no warning.
+- Headless app test, Profile Builder: opening "Ball Winning Midfielder" now warns for three of its metrics.
+- `data/profiles.csv` and `data/metric_catalogue.csv` were not changed by the tests.
+
+To note:
+
+- Three of the six metrics of "Ball Winning Midfielder" are now below 0.3 events per match for DM: the two "beaten by" ratios (0.00) and `count_direct_regain_per_press` (0.09: a DM wins the ball directly from a press about once in eleven matches). Only the first one empties the score; the other two have a z-score, built on very few events.
+- Until the profile is changed, its scores stay empty outside the Eredivisie. After changing it in the Profile Builder, press "Recalculate benchmarks".
+- The warning only covers the case where a whole competition has no z-score. A single player without a value for a metric also gets no score, without a warning (1 of 231 for "Mobile Striker").
+- The user's own changes from the app are part of the staged state: four ratio metrics in `data/metric_catalogue.csv` and the re-saved profile in `data/profiles.csv`.
+- Nothing is committed; the changes are staged for review.
+
+---
+
+## Task 18 - Player profile page (2026-10-13)
+
+Prompt: "Player profile page. Use design demo as a template and let's make following sections. 1. Player selector. season --> competition --> team (optional) --> player. 2. minutes, games, position breakdown. 3. within most played position (top2) --> score per profile. 4. Most similar players section: gives top 5 based on role (dropdown) in top 2 of most played positions."
+
+Status: done. Logged as done by the user on 2026-10-13. Staged, nothing committed. Replaces Task 12. Section 4 (most similar players) was replaced by Task 19; weighted scores were added by Task 20.
+
+### What is there already
+
+- `pages/9_Design_Demo.py`: the layout to copy. Header with eyebrow and badges, a row of metric tiles, then visuals (`payloads.bar`, `payloads.radar`, `visuals.show`) and `percentile_bars` from `src/viz/theme.py`.
+- `foundation.player_matches`: one row per player and match with position, role and minutes. Enough for minutes, games and the position breakdown; no new calculation needed.
+- `engine.profile_score`: profile score and its percentile within competition and role, from the stored benchmark table. Used as it is.
+- `src/similarity/` is empty. The README plans a weighted cosine or Euclidean distance on standardised features, scaled to 0-100, within a role group.
+- Four profiles are stored: DM has two (Deep Lying Playmaker, Ball Winning Midfielder), CM one (Box To Box Midfielder), CF one (Mobile Striker). CB, FB/WB, AM and W have none.
+
+### What was measured
+
+- One season in the data (2024/2025), five competitions, 90 teams, 2,484 players per competition.
+- Roles per player: 587 players have one role, 616 two, 1,281 three or more. The two most played roles hold 94% of a player's minutes on average (median 99.5%).
+- The most played role has enough matches (5 or more of 60+ minutes) for 63% of the players; the second role for 18% of the 1,897 players who have one. So the second role is low sample most of the time.
+- 73 players played for two teams in the same competition; 53 played in two competitions.
+
+### Proposed approach
+
+New page `pages/3_Player_Profile.py`, plus one small function for the similarity. No change to the engine or the data layer.
+
+1. Player selector: four boxes in a row, each limited by the one before. Season (from `competition_editions.csv`), Competition, Team (first choice "All teams"), Player.
+2. Header as in the design demo: player name, badges for team, most played role and "Low sample" when it applies. Below it a row of tiles: Matches, Matches of 60+ minutes, Minutes, Positions played. Then the position breakdown: a horizontal bar of minutes per position (design-system bar visual) next to a table with position, role, matches, minutes and share of minutes.
+3. Profile scores: the two most played roles side by side. Per role: its minutes and matches, and one percentile bar per profile of that role (the bar is the score percentile within competition and role, the number next to it the profile score). A role without profiles shows one line saying so.
+4. Most similar players: one dropdown with the profiles of the two most played roles, for example "Deep Lying Playmaker (DM)". Below it a table with the five closest players: player, team, competition, matches, similarity (0-100) and their profile score.
+   - `src/similarity/profile.py`: one function. Distance = Euclidean distance on the z-scores of the profile's metrics, each weighted by its profile weight. Similarity = 100 x (1 - distance / the largest distance to this player).
+
+### Plan
+
+- [x] Read `CLAUDE.md`, `tasks/todo.md`, the last five entries of `docs/activity.md`, the design demo, the Benchmarks page, the engine and the data layer
+- [x] Measure roles per player and two-team players
+- [x] Write this plan
+- [x] Plan verified by user
+- [x] `pages/3_Player_Profile.py`: selector (season, competition, team, player)
+- [x] `pages/3_Player_Profile.py`: header, tiles and position breakdown
+- [x] `pages/3_Player_Profile.py`: profile scores for the two most played roles
+- [x] `src/similarity/profile.py`: the five most similar players for a profile
+- [x] `pages/3_Player_Profile.py`: similar players section with the dropdown
+- [x] `README.md`: folder list
+- [x] Verify: hand check of one profile score against the Benchmarks page and of one distance; headless app test of the page (no browser)
+- [x] Stage the changes, add the review section, update `docs/activity.md`
+
+### Decisions
+
+1. What "position" means for the top 2. Proposed: the role group (CB, FB/WB, DM, CM, AM, W, CF), because profiles and scores exist per role. The breakdown in section 2 shows the raw positions (LCB, RDM, ...) with their role next to them.
+2. Top 2 by what. Proposed: by minutes played in the role.
+3. What the dropdown in section 4 lists. Proposed: the profiles of the two most played roles, and similarity is measured on the metrics of the chosen profile with its weights ("who plays the Deep Lying Playmaker role most like him"). Alternative: the dropdown lists the two roles, and similarity uses the metrics of all profiles of that role together.
+4. Who can be a similar player. Proposed: players of the same role in all five competitions with enough matches (not low sample), the player himself left out. z-scores are within competition, so "similar" means similar relative to his own league. Alternative: same competition only.
+5. A player with two teams in the same competition (73 players). Proposed: two entries in the player box, "Name (Team)", each with its own minutes and scores; this is the grain of the player table and of the Benchmarks page. Alternative: one entry with the teams added up, which needs a new player table.
+6. A role without a profile (CB, FB/WB, AM, W today). Proposed: section 3 says "No profile for this role yet" and the dropdown in section 4 leaves it out. If neither role has a profile, section 4 shows one line.
+7. Low sample. Proposed: every player can be picked. A role with fewer than 5 included matches gets a "Low sample" badge and its scores are still shown; such players are not offered as similar players.
+8. Profile scores and z-scores come from the stored benchmark table, so the numbers equal the Benchmarks page. If a profile has a metric that is not in it, the page asks for "Recalculate benchmarks".
+9. Not in this task: the strengths and weaknesses over all metrics from Task 12, a radar against the similar player, and export. Each can follow as its own task.
+
+Answers (taken as the go-ahead): 1 to 6 and 8 as proposed. 7: "make a 'switch' to include low sample players". 9: "include a radar with drop downs for role and profile in section 3."
+
+How 7 and 9 were applied:
+
+- 7: section 4 has a switch "Include low sample players", off by default. It was read as applying to the similar players; every player can still be picked in the player box.
+- 9: section 3 has, next to the score bars, a Role box (the two most played roles that have a profile) and a Profile box, and a radar of the percentiles of that profile's metrics against the role median (50). The strengths and weaknesses over all metrics and the export stay out of this task.
+
+### Review (Task 18)
+
+Changes made:
+
+- `pages/3_Player_Profile.py` (new): the four sections of the plan. Selector (season, competition, optional team, player as "Name (Team)"); header with badges and four tiles; minutes per position as a bar with a table; profile scores as percentile bars for the two most played roles, with the radar; the five most similar players for a chosen profile.
+- `src/similarity/profile.py` (new): `most_similar`, one function.
+- `README.md`: folder list. No change to the engine or the data layer.
+
+Verified by Claude (no browser):
+
+- Headless app test: the page runs for the first player in the list (a CM whose second role, W, has no profile: "No profile for this role yet") and for Peer Koopmeiners (AZ Alkmaar: DM 2,472 minutes, CM 534 minutes; three profiles shown), with the team box set and with the switch on and off.
+- Hand check for Koopmeiners, "Ball Winning Midfielder": profile score 1.10 and percentile 98, equal to `engine.profile_score`; the five names and similarities recalculated with numpy equal the table.
+- `data/profiles.csv` and `data/metric_catalogue.csv` were not changed by the test.
+
+Not verified: how the page looks in the browser (the bar, the radar and its axis labels, the badges).
+
+Check it yourself:
+
+```bash
+source .venv/bin/activate
+streamlit run app.py
+```
+
+Open "Player Profile". Example: NED - Eredivisie, AZ Alkmaar, Peer Koopmeiners.
+
+To note:
+
+- The radar axis labels are the metric names with spaces instead of underscores. Some are long (for example "xthreat completed passes passing option in build up") and may be cut off or overlap; not seen in a browser.
+- The switch changes the similarity numbers of everyone, not only the list: similarity is scaled to the furthest candidate, and low-sample players sit further away. In the check the top player went from 90 to 96.
+- Similar players come from all five competitions. The player himself is left out, also his row at another team.
+- A second role is shown even with very few minutes; it then has the "Low sample" badge.
+- A score very close to zero can show as "-0.00".
+- A profile whose metrics are not in the stored benchmarks is left out and named in a notice.
+- Nothing is committed; the changes are staged for review.
+
+---
+
+## Task 19 - Player profile: best players instead of similar players (2026-10-13)
+
+Prompt: "remove similarity but choose best players in the selected profile, compared to target player"
+
+Status: done. Logged as done by the user on 2026-10-13. Staged, nothing committed. No separate plan check was asked for this one-section change.
+
+### Plan
+
+- [x] `pages/3_Player_Profile.py`: section 4 becomes "Best players in the profile"
+- [x] `src/similarity/profile.py`: removed (no page uses it any more)
+- [x] Verify with a headless app test (no browser)
+- [x] Stage the changes, update `docs/activity.md`
+
+### Review
+
+Changes made:
+
+- Section 4 of the Player Profile page: the profile box and the "Include low sample players" switch stay. The table now has the chosen player in the first row ("Target") and below him the five players with the highest profile score for that profile, with the profile score, the difference to the target and the score percentile.
+- The similarity calculation and its file are gone. Sections 1 to 3 are unchanged.
+
+Verified by Claude (no browser): headless app test for Peer Koopmeiners, "Ball Winning Midfielder": target 1.10, the five best from 1.74 down to 1.08, with the switch on and off.
+
+To note:
+
+- "Compared to target player" was read as: his row on top and a difference column on the profile score. A comparison per metric of the profile is not in the table.
+- The five best come from all five competitions, the same group as before. The profile score is built on z-scores within competition, so it says how far a player is above his own league; it does not rank leagues against each other.
+- With the switch on, the list is taken over by players with one to three matches (scores of 2.5 to 3.0). That is what low sample does to a score.
+- The fifth best can score below the target when the target is himself near the top (difference -0.01 in the check).
+- Nothing is committed; the changes are staged for review.
+
+---
+
+## Task 20 - Benchmarks: profile score and percentile weighted for league strength (2026-10-13)
+
+Prompt: "add a logic for new colums: profile score (weighted) and profile percentile (weighted) in the benchmarks page. Let's use the opta power rankings (url = https://theanalyst.com/articles/strongest-football-leagues-in-the-world-opta-power-rankings) in the competitions_power_rankings.csv"
+
+Status: done and staged, nothing committed. The browser check is for the user.
+
+### What is there already
+
+- `data/raw/competition_power_rankings.csv` (added by the user), one row per competition: `name`, `competition_id`, `opta_rating`.
+
+  | Competition | Opta rating |
+  |---|---|
+  | ENG - Premier League | 92.7 |
+  | BEL - Pro League | 82.3 |
+  | ENG - Championship | 81.1 |
+  | DEN - Superliga | 80.1 |
+  | NED - Eredivisie | 79.6 |
+
+- The player tables carry `competition_edition_id` (895, ...); the file has `competition_id` (1, 16, ...). `competition_editions.csv` links the two.
+- The profile score is the weighted mean of z-scores within competition and role. It says how far a player is above his own league. A 1.0 in the Eredivisie and a 1.0 in the Premier League are the same number today.
+- The profile score is calculated on the Benchmarks page from the stored benchmark table (`engine.profile_score`); it is not stored itself.
+
+### Proposed logic
+
+1. Profile score (weighted) = profile score - (rating of the strongest league - rating of the player's league) / points per z-score.
+   - "Points per z-score" is one setting: how many Opta rating points count as one z-score. Proposed default 10, as a field in the sidebar of the Benchmarks page.
+   - Shift at the default: Premier League 0, Pro League -1.04, Championship -1.16, Superliga -1.26, Eredivisie -1.31. So an Eredivisie player needs a score of 1.31 to be level with an average Premier League player of the same role.
+   - Why a shift and not a multiplication (score x rating / 100): multiplying pulls every score towards zero, so a player below average in a weaker league would come out better than the same player in a stronger league.
+2. Profile percentile (weighted) = the percentile of the weighted score within the role over all five competitions together (players with enough matches as the reference). The existing score percentile stays within competition and role.
+
+### Plan
+
+- [x] Read the rankings file and the score calculation
+- [x] Write this plan
+- [x] Plan verified by user
+- [x] `src/data/loaders.py` / `src/data/inventory.py`: the rankings file as a reference file
+- [x] `src/benchmarks/engine.py`: one function that adds `score_weighted` and `score_weighted_pct` to the output of `profile_score`
+- [x] `pages/1_Benchmarks.py`: the field "Rating points per z-score", the two new columns, the explanation in the caption
+- [x] Verify: hand check for one player; headless app test (no browser)
+- [x] Stage the changes, add the review section, update `docs/activity.md`
+
+### Decisions
+
+1. The formula: a shift as above. Alternative that needs no setting: do not change the score, only show the rating next to it.
+2. Points per z-score, default 10. This number is a judgement, not something the data can tell: there is no player who is measured in two leagues at once. At 5 the league gap doubles (Eredivisie -2.62), at 20 it halves (-0.66).
+3. Reference league: the strongest league in the file gets shift 0 and the others go down. Alternative: the mean of the five (Premier League goes up, the others down a little); the ranking of players is the same either way.
+4. Weighted percentile over all competitions together, within the role.
+5. A competition that is missing in the rankings file: no weighted score, and the page names it.
+6. The rankings file stays in `data/raw/`, which is ignored by git, so it exists only on this machine. Alternative: move it to `data/` next to the profiles so it is tracked.
+7. The ratings were not checked against the article by Claude: the article shows the current ratings, the file is labelled 2024/2025. They are used as they are in the file.
+8. Not in this task: using the weighted score on the Player Profile page ("Best players in the profile" ranks over all five leagues and would gain most from it).
+
+Answer: "8. include the weighted and raw scores in player profile page." Taken as the go-ahead with decisions 1 to 7 as proposed and 8 changed: the Player Profile page is part of this task.
+
+### Review (Task 20)
+
+Changes made:
+
+- `src/benchmarks/engine.py`: `competition_ratings` (Opta rating per competition, read from the rankings file through `competition_editions.csv`) and `weighted_score` (adds `opta_rating`, `score_weighted` and `score_weighted_pct` to the output of `profile_score`). Default 10 rating points per z-score.
+- `pages/1_Benchmarks.py`: the field "Rating points per z-score" in the sidebar; the columns "profile score (weighted)" and "profile percentile (weighted)" after the two existing score columns; the explanation in the caption; a warning if a competition is not in the rankings file.
+- `pages/3_Player_Profile.py`: section 3 has two bars per profile, the raw score (percentile within competition) and the weighted score (percentile over all competitions). Section 4 shows both scores and both percentiles, and now ranks the five best on the weighted score; the difference to the target is on the weighted score too.
+- `src/data/inventory.py`: the rankings file is listed in the File inventory as a reference file.
+
+Verified by Claude (no browser):
+
+- The shift per competition in the Benchmarks table: Premier League 0, Pro League 1.04, Championship 1.16, Superliga 1.26, Eredivisie 1.31.
+- Hand check for Peer Koopmeiners, "Ball Winning Midfielder": raw 1.097, weighted 1.097 - (92.7 - 79.6) / 10 = -0.213; weighted percentile 83.6, equal to a recount over all DMs with enough matches. With the field set to 20 the weighted score is 0.442.
+- Headless app test of the Benchmarks page, the Player Profile page and the main page: no errors.
+
+To note:
+
+- At 10 points per z-score the league gap is large. For "Ball Winning Midfielder" the best weighted scores over all five leagues are all Premier League players, and Koopmeiners goes from the 98th percentile in the Eredivisie to the 84th over all leagues. If that is too strong, raise the number in the Benchmarks sidebar (20 halves the gap).
+- The Player Profile page uses the number set on the Benchmarks page in the same browser session; after a restart, or if the Benchmarks page was not opened, it uses 10.
+- The weighted percentile is within the role over all competitions; the field Competition on the Benchmarks page filters the rows but does not change it.
+- The ratings are used as they are in the file and were not checked against the article. The file stays in `data/raw/`, which is not in git.
+- `data/profiles.csv` has new profiles saved by the user in the app during this task (Classical Winger, Inside Playmaker); left unstaged. They need "Recalculate benchmarks" before they show on the Player Profile page.
+- Nothing is committed; the changes are staged for review.
+
+---
+
+## Task 21 - Player profile: top 10 metrics per category for the two most played roles (2026-10-13)
+
+Prompt: "when selecting a player in the player profile page, load the top 10 metrics they are strong in per category (Physical, Passing,...) within competition for the top 2 roles played in (toggle to switch between them). Check how long this would take to calculate for Leonardo da Silva Lopes"
+
+Status: done and staged, nothing committed. The user approved the plan with "go" (all eight decisions as proposed). The browser check is for the user.
+
+### What was measured (Leonardo da Silva Lopes, KAA Gent, BEL - Pro League)
+
+- His two most played roles: DM (742 minutes, 8 included matches) and CM (506 minutes, 5 included matches). Neither is low sample.
+- 3,128 full-match metrics in the catalogue, in six categories: Off-ball runs (819), Passing (1,072), Passing options (476), Physical (51), Possessions (48), Pressure (662).
+
+| What is calculated | Time |
+|---|---|
+| All metrics with z-scores and percentiles, his competition and two roles (322 player rows) | 78 s |
+| His own season values only (14 match rows), code as it is | 54 s |
+| His own season values only, with the catalogue read once (test, not in the code) | 12.5 s |
+| Season values of all players (48,708 match rows), with the catalogue read once (test) | 29 s |
+| Picking the top 10 per category once the values are there | 0.1 s |
+
+- Cause of the slowness: `foundation.rate_column` reads `data/metric_catalogue.csv` from disk every time it is called (5 ms), and it is called two to three times per metric. That is why the time depends on the number of metrics and hardly on the number of players.
+- The z-score step itself is small (under 1 s for his competition).
+
+### Route chosen by the user
+
+"Option 2 with only z-scores": a stored table with the mean and spread per competition, role and metric. When a player is selected and "Run calculations" is pressed, only his own season values are calculated and turned into z-scores with that table. No percentiles.
+
+### Proposed approach
+
+1. Speed: `foundation.rate_column` no longer reads the catalogue per call; `match_values`, `season_rates` and `engine.benchmark` pass on the catalogue rows they have already loaded. No change to how any value is calculated. The stored benchmarks must come out identical before and after.
+2. Reference table: `src/benchmarks/strengths.py` (new), function `metric_reference`: for every full-match metric the mean, the spread and the number of reference players (not low sample) per competition and role. About 109,000 rows (5 competitions x 7 roles x 3,128 metrics), written to `data/derived/metric_reference_<timestamp>.csv`. Lower-is-better metrics are flipped when the z-score is made, as in the benchmarks.
+3. Button "Recalculate metric reference" on the Benchmarks page, next to "Recalculate benchmarks". Expected to take under a minute (29 s measured for the season values; the mean and spread on top were not timed).
+4. Player Profile page, new section "Strongest metrics" after the profile scores: a "Run calculations" button, a toggle for the two most played roles, and per category a table with the ten highest z-scores: metric, file, season value, z-score. The result is kept for the selected player, so switching the toggle does not calculate again.
+
+### Plan
+
+- [x] Plan verified by user
+- [x] `src/data/foundation.py` and `src/benchmarks/engine.py`: stop reading the catalogue per metric; check that a recalculated benchmark table equals the stored one
+- [x] Time one player again; only if it is still slow, look at the next cause
+- [x] `src/benchmarks/strengths.py`: `metric_reference` (mean, spread, reference players per competition, role and metric) and `player_strengths` (season values of one player, z-scores, top 10 per category)
+- [x] `pages/1_Benchmarks.py`: button "Recalculate metric reference"
+- [x] `pages/3_Player_Profile.py`: section "Strongest metrics" with the button, the role toggle and the tables per category
+- [x] Verify: hand check of one z-score against the stored benchmarks for a metric that is in a profile; time for Leonardo da Silva Lopes; headless app test (no browser)
+- [x] Stage the changes, add the review section, update `docs/activity.md`
+
+### Decisions
+
+1. Categories. Proposed: the six categories of the catalogue (Off-ball runs, Passing, Passing options, Physical, Possessions, Pressure).
+2. Rare events. In the test run most of his top 10 were events that happen about 0.15 times per 30 minutes, with z-scores of 4 to 6 (for example `count_difficult_coming_short_runs_in_finish`). Proposed: a switch "Useful metrics only", on by default, with the same rule as the Profile Builder (the median player of the role has at least 0.3 of the events per match). The events per match are stored as one more column of the reference table, so the button does not have to calculate them.
+3. The same metric in several files. `count_direct_disruption_on_ball_engagements` is in four pressure files and filled four places of one top 10. Proposed: a metric name is shown once per category.
+4. Variants of one metric (all phases, in build up, in create, ...) can still fill several places. Proposed: left as it is in this task.
+5. Few reference players. With fewer than 2 reference players in a competition and role there is no z-score. Proposed: also show the number of reference players next to the role, so a z-score built on a handful of players can be recognised.
+6. Low sample. Proposed: the second role is shown also when it is low sample, with the badge, as in the profile scores.
+7. Where the reference table lives. Proposed: `data/derived/`, like the benchmarks. It depends on the catalogue and on the match settings, so it has to be recalculated when those change; the page shows which file it uses.
+8. First-half and second-half physical metrics are left out (full match only).
+
+Answer: the user asked to explain decision 5 (how many players a z-score is measured against; 10 to 108 per competition and role with the current settings), then "go". All eight applied as proposed.
+
+### Review (Task 21)
+
+Changes made:
+
+- `src/data/foundation.py` and `src/benchmarks/engine.py`: `rate_column` takes the catalogue rows that the caller has already loaded, so the catalogue file is no longer read from disk for every metric. No value changes.
+- `src/benchmarks/strengths.py` (new): `metric_reference` (mean, spread and number of reference players per competition, role and metric, plus the events per match of the role), `run_metric_reference` (writes it to `data/derived/`), `player_strengths` (season value and z-score of every full-match metric for the roles of one player) and `strongest` (the ten highest z-scores per role and category).
+- `pages/1_Benchmarks.py`: button "Recalculate metric reference" in the sidebar.
+- `pages/3_Player_Profile.py`: new section "Strongest metrics" between the profile scores and the best players. "Run calculations" button, a Role choice for the two most played roles, a switch "Useful metrics only" (on by default), and one table per category with metric, file, season value, per and z-score. The line above the tables shows the minutes in the role and how many players the z-scores are measured against.
+- `README.md`: folder list.
+- `data/derived/metric_reference_2026-10-13T213352.csv`: built once with the current settings (109,480 rows, 13.7 MB, ignored by git), so the page can be tried straight away.
+
+Timing for Leonardo da Silva Lopes (KAA Gent, DM and CM):
+
+| Step | Time |
+|---|---|
+| "Recalculate metric reference", once, all players | 32 s |
+| "Run calculations" for the player, both roles | 9 to 10 s |
+| Switching the role or the switch afterwards | 0.1 s |
+| Before this task: all metrics within his competition and two roles | 78 s |
+
+Verified by Claude (no browser):
+
+- The speed fix changes nothing: `engine.benchmark` on the 26 profile metrics gives a table identical to the one from before the change.
+- For Leonardo da Silva Lopes, 52 z-scores and season values from the new route (stored mean and spread) equal those of `engine.benchmark`; largest difference 5e-14.
+- Headless app test of the Player Profile page: before the button a hint is shown; after it six tables of ten rows for DM ("z-scores against 34 players") and for CM (57 players); the switch off gives other rows; picking another player hides the result until the button is pressed again. The Benchmarks page runs and shows both buttons.
+
+Not verified: how the section looks in the browser, and a press on "Recalculate metric reference" in the app (the function behind it was run directly).
+
+Check it yourself:
+
+```bash
+source .venv/bin/activate
+streamlit run app.py
+```
+
+Open "Player Profile": BEL - Pro League, Leonardo da Silva Lopes, then "Run calculations" under "Strongest metrics".
+
+To note:
+
+- The time per player is about 9 seconds, not the few seconds estimated before. What is left is spread over the 3,128 metrics (about 3 ms each); going lower means rewriting `season_rates` to handle all metrics of a file at once. Not done.
+- The reference table is not updated by itself. After a change of the catalogue, the role mapping or the match settings (Recalculate on the main page), press "Recalculate metric reference" again; the page names the file it uses. A metric added to the catalogue after the last build has no z-score until then.
+- With "Useful metrics only" the lists are still partly averages and ratios built on few events of this one player (for example `avg_speed_avg_cross_receiver`): the rule looks at the median player of the role, not at how many events the selected player has.
+- Variants of one metric still take several places (decision 4), for example `avg_distance_covered_pulling_half_space_runs` and the same metric "in create".
+- A top 10 can hold z-scores below zero when a player is weak in a whole category; nothing is cut off.
+- 7,921 of the 109,480 reference rows give no z-score (fewer than two reference players with a value, or no spread).
+- The minimum of 0.3 events per match is fixed on this page; the Profile Builder has a field for it.
+- The result is kept for one player per browser session; picking another player and coming back means pressing the button again.
+- `data/metric_catalogue.csv` and `data/profiles.csv` have unstaged changes from before this task (saved in the app); left as they are.
+- Nothing is committed; the changes are staged for review.
+
+---
+
+## Task 22 - Player profile: no weighted score in "Profile scores" (2026-10-13)
+
+Prompt: "Leave out the weighted variant for the \"profile scores\" section on player profile page."
+
+Status: done and staged, nothing committed. The browser check is for the user. Built without a separate plan check, because it is one section on one page.
+
+### Plan
+
+- [x] `pages/3_Player_Profile.py`: section "Profile scores" shows one bar per profile (the raw score, percentile within competition and role); the "· weighted" bar and its sentence in the caption are removed
+- [x] Headless app test (no browser); stage; update `docs/activity.md`
+
+### Review
+
+Changes made:
+
+- `pages/3_Player_Profile.py` only, three places in the "Profile scores" section: the weighted bar, the caption, and the check for a missing score (now on the raw score only).
+
+Verified by Claude (no browser): the page runs without errors and no "· weighted" bar is drawn.
+
+To note:
+
+- The section "Best players in the profile" is unchanged: it still shows both scores and ranks on the weighted one. The Benchmarks page is unchanged too.
+- The radar next to the bars never used the weighted score.
+- Staging the page also staged the `placeholder` argument that the user added to the Team box.
+- Nothing is committed; the change is staged for review.
+
+---
+
+## Task 23 - Radar: axis labels cut off (2026-10-13)
+
+Prompt: "check cut of text in radar and propose fix. This is a new to-do per claude.md rules."
+
+Status: done and staged, nothing committed. Plan approved by the user ("approved"), with both decisions as proposed. The browser check is for the user.
+
+### Cause
+
+- `components/sc_chart/sc_charts.js`, function `radar`: every axis label is drawn on one line, and the radar takes 66% of the frame.
+- At a frame height of 420 the radar is about 139 px in radius. In a half-width column that leaves about 135 px on each side, which is room for about 18 capitals at 11 px.
+- The metric names of "Creative Passer" are 39 to 55 characters, so the labels on the left and right run past the edge of the canvas and are clipped there.
+- The Player Profile page passes the raw metric names with underscores replaced by spaces; that is correct and stays.
+
+### Plan
+
+- [x] `components/sc_chart/sc_charts.js`, radar only: wrap each axis label on word boundaries at 18 characters per line (a small helper inside the file); the value stays on its own line below
+- [x] Same function: radius from 66% to 58%, so that three lines plus the value fit above the top axis and below the bottom axes
+- [x] Headless app test of the Player Profile page (no browser); stage; update `docs/activity.md`; add the review
+- [ ] Browser check by the user: "Creative Passer" (CM) and one profile with short metric names
+
+### To decide
+
+1. Wrap in the chart code (proposed) or shorten the names on the page. Wrapping keeps the full metric name and also fixes the standalone export, which uses the same file.
+2. The radar becomes about 12% smaller. The alternative is to keep 66% and raise the frame height from 420 to about 480 on this page.
+
+### Review
+
+Changes made:
+
+- `components/sc_chart/sc_charts.js` only, in the function `radar`: a helper `wrap` that breaks an axis label on spaces at 18 characters per line, the formatter that uses it, and the radius from 66% to 58%.
+
+Verified by Claude (no browser):
+
+- The wrap on the names from the screenshot: "XTHREAT COMPLETED / PASSES THROUGH / SECOND LAST LINE" (3 lines); the longest name, "xpass completion pass attempts through second last line", gives 4 lines. Short names stay on one line.
+- The file passes a syntax check, and the Player Profile page runs in a headless app test without errors.
+
+To note:
+
+- How the labels look is not checked by Claude. To check in the browser: "Creative Passer" (CM) and a profile with short metric names. The browser may hold the old `sc_charts.js`; do a hard refresh.
+- The longest name takes 4 lines plus the value. On a bottom axis that may come close to the legend. If it does, the simple fix is a frame height of 460 for this radar on the page.
+- A single word longer than 18 characters is not broken.
+- The change applies to every radar, including the standalone export.
+- Nothing is committed; the change is staged for review.
+
+---
+
+## Where we are (end of session 2026-10-12; Task 13 added on 2026-10-13)
 
 Everything below is staged in git; nothing is committed. The commit is for the user.
 
@@ -1067,6 +1805,9 @@ Done:
 - Tasks 8 to 10: icon and font fixes; the theme CSS is no longer cached.
 - Task 4: calculated season metrics in their own tab (average of best x, ratio). Checked by the user.
 - Task 11: benchmarking engine, profile builder with correlation check, profile score, editable role mapping. Checked by the user.
+- Tasks 13 to 17 (2026-10-13): Profile Builder dropdowns and useful-metric filter, catalogue search, catalogue rebuilds, warning for empty profile scores.
+- Task 21 (2026-10-13): strongest metrics per category on the Player Profile page, with a stored metric reference.
+- Tasks 18 and 19 (2026-10-13): Player Profile page (selector, minutes and positions, profile scores with radar, best players in a profile). Logged as done by the user. Task 12 was replaced by Task 18.
 
 Stored by the user in the app on 2026-10-12, and staged:
 

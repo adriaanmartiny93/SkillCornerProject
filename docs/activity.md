@@ -435,3 +435,318 @@
 - Timed the calculation of all metrics of a file for Eredivisie / DM: off_ball_runs 24 s, pressing_engagements 3 s, physical 2 s. Nothing was written.
 - Added Task 12 to `tasks/todo.md`: a new page `pages/3_Player_Profile.py` (season, competition, role, player; profile scores of the role; strengths, weaknesses and a full sortable table per metric category). Seven decisions are in the plan.
 - No code changed. Waiting for the user to verify the plan. Staged `tasks/todo.md` and `docs/activity.md`; nothing committed.
+
+## Session 2026-10-13
+
+### Prompt
+
+> Read claude.md, tasks/todo.md and the last 5 entries in docs/activity.md and prepare for a new to-do.
+
+### Actions
+
+- Read `CLAUDE.MD`, `tasks/todo.md` in full and the last five entries of this log; checked the git state and the files in `pages/` and `src/benchmarks/`.
+- Found: the working tree is clean, the work up to the Task 12 plan is in the commit "major commit". Task 12 (player profile page) has a plan with seven open decisions and is not built.
+- No code changed. Waiting for the new to-do. Staged `docs/activity.md`; nothing committed.
+
+### Prompt
+
+> Let's first look at the profile builder page. There are so many metrics that it's not easy to use the metrics search and multi select.
+> Can we:
+> 1. First define what types of metrics we might want to add to the profile.
+> 2. make conditional dropdowns for the selection of metrics.
+> Also --> some metrics might have low numbers of rows leading to outliers for certain positions --> let's filter the amount of metrics beforehand. can we devise a logic for deciding if a metric is usefull yes / no?
+
+### Actions
+
+- Read `pages/2_Profile_Builder.py`, `src/data/catalogue.py`, `src/benchmarks/engine.py` and the season calculation in `src/data/foundation.py`.
+- Split the metric names of all event files into their parts (measure, qualifier, action, phase or block) and tested a rule that gives every one of the 3,123 full-match metrics one of eight types.
+- Measured, with a scratch script outside the project, the events per match for every metric and role (reference players, included matches): 5 seconds for everything. In 7,485 of 21,525 metric x role combinations more than half of the players never have the event; three metrics in the stored profiles are of this kind.
+- Checked the 94 pressure metric names that are in several files (values equal in 99.9 to 100% of rows for three of them) and the `overlap` / `overlap_runs` naming (same action).
+- Added Task 13 to `tasks/todo.md`: the eight types, five conditional dropdowns (Category, Action, Type, Phase / block, Metric) and a useful yes / no rule (at least 0.5 events per match for the median player of the role). Eight decisions are in the plan.
+- No code changed. Waiting for the user to verify the plan. Staged `tasks/todo.md` and `docs/activity.md`; nothing committed.
+
+### Prompt
+
+> 1. types are simply the metric categories. Within those, we can indeed use logic to filter further.
+> 2. category first since this is type.
+> 3. ok
+> 4. threshold at 0.3.
+> 5. as proposed
+> 6. ok
+> 7. yes
+> 8. ok.
+> go
+
+### Actions
+
+- Wrote the answers into the Task 13 plan in `tasks/todo.md`. Answer 1 was read as: the six categories are the types and the first box; the eight groups stay as a filter inside a category, named "Measure".
+- `src/data/catalogue.py`: `metric_parts` (action, measure and phase by rule from the metric name; not stored).
+- `src/benchmarks/usefulness.py` (new): events per match per event metric and role, for the median reference player; default threshold 0.3.
+- `pages/2_Profile_Builder.py`: the box with all metrics replaced by "Minimum events per match", "Useful metrics only", five conditional boxes (Category, Action, Measure, Phase / block, Metric), "Add to profile", the list "Metrics in this profile" and a warning for profile metrics below the threshold.
+- `README.md`: folder list.
+- Verified without a browser: every metric gets its three parts; hand check of one events-per-match value; headless app test of the Profile Builder (narrowing down, add, remove, role change, opening a stored profile) and of the three other pages. `data/profiles.csv` was not changed by the tests.
+- Added the review section for Task 13 to `tasks/todo.md`. Staged the changed and new files; nothing committed.
+
+### Prompt
+
+> add an option to search to the dataframe/table in metric catalogue.
+
+### Actions
+
+- Found that the Metric Catalogue page already had a search field, at the bottom of the sidebar filters.
+- `pages/0_Metric_Catalogue.py`: moved it to right above the table of the general catalogue as "Search the table". It now looks in category, file, metric name, type and definition, needs every word to be found, and treats an underscore as a space.
+- Headless app test of the page with five searches and Save; the stored catalogue is unchanged.
+- Added Task 14 with its review to `tasks/todo.md`. No separate plan check was asked for this one-field change. Staged `pages/0_Metric_Catalogue.py`, `tasks/todo.md` and `docs/activity.md`; nothing committed.
+- Noticed: `data/profiles.csv` has a change that Claude did not make (a profile saved in the app); left unstaged.
+
+### Prompt
+
+> i removed one of the source files. Rebuild metric catalogue accordingly.
+
+### Actions
+
+- Found the removed file: `data/raw/pressing_engagements.csv`. Checked that no stored profile and no calculated metric points to it.
+- `src/data/inventory.py`: took `pressing_engagements` out of the list of metric files.
+- Rebuilt the catalogue and compared it with the stored one: the rows of the other files are identical, so no saved edit was lost. Stored it in `data/metric_catalogue.csv`: 3,216 metrics before, 3,121 now. 57 of the 95 removed metrics existed only in that file (pressing per block, isolated pressing).
+- Headless app test: File inventory, events per match, and all four pages run without errors.
+- Added Task 15 with its review to `tasks/todo.md`. Staged `src/data/inventory.py`, `data/metric_catalogue.csv`, `tasks/todo.md` and `docs/activity.md`; nothing committed. `data/profiles.csv` (the user's own change) left unstaged.
+
+### Prompt
+
+> rebuild again
+
+### Actions
+
+- Found that `data/raw/pressing_engagements.csv` is back in `data/raw/` (45,865 rows, 99 columns, 1,622 matches).
+- `src/data/inventory.py`: put `pressing_engagements` back in the list of metric files.
+- Rebuilt the catalogue and stored it: 3,216 metrics, identical to the copy from before the removal. Both files are equal to the last commit again.
+- Headless app test: File inventory (13 files) and all four pages run without errors.
+- Added Task 16 to `tasks/todo.md` and marked Task 15 as undone by it. Staged `src/data/inventory.py`, `data/metric_catalogue.csv`, `tasks/todo.md` and `docs/activity.md`; nothing committed.
+
+### Prompt
+
+> empty score categories
+
+(With a screenshot of the Benchmarks page: profile "Ball Winning Midfielder", BEL - Pro League, the columns "profile score" and "score percentile" are None for every player.)
+
+### Actions
+
+- Read the stored benchmarks, `data/profiles.csv`, the calculated metrics in the catalogue and the raw file `on_ball_engagements`.
+- Cause: the profile metric `count_beaten_by_movement_per_press` has no z-score in four of the five competitions, because every reference DM there has the value 0 (the event happens 8 times in the whole data). A player without a z-score for one metric gets no profile score: 57 of 243 reference DMs have one.
+- Found why the Profile Builder did not warn: the useful yes / no rule judges a ratio on the column it is divided by, not on its outcome.
+- Added Task 17 to `tasks/todo.md` with the cause, a proposed fix (ratio rule, a warning on the Benchmarks page) and three decisions.
+- No code changed. Waiting for the user to verify the plan. Staged `tasks/todo.md` and `docs/activity.md`; nothing committed.
+
+### Prompt
+
+> go
+
+### Actions
+
+- Took "go" as approval of Task 17 with the three decisions as proposed.
+- `src/benchmarks/usefulness.py`: a calculated ratio is judged on its outcome column instead of the column it is divided by.
+- `pages/1_Benchmarks.py`: a warning names the profile metrics that have no z-score in a competition. The score calculation itself is unchanged.
+- Verified without a browser: the two "beaten by" ratios now show 0.00 events per match for DM; headless app test of the Benchmarks page (warning for the one profile, per competition) and of the Profile Builder (three metrics of the profile flagged). The stored profiles and catalogue were not changed by the tests.
+- Added the review section for Task 17 to `tasks/todo.md`. Staged the changed files, including the user's own app changes in `data/metric_catalogue.csv` and `data/profiles.csv`; nothing committed.
+
+### Prompt
+
+> is the spread for "count_direct_regain_per_press" logical --> expect values between 0 and 1.
+
+### Actions
+
+- Recalculated the metric from the raw data for all 7,013 player rows and checked it by hand for one player (Lawrence Agyekum: 3 direct regains in 29 presses over 5 included matches = 0.103, equal to the pipeline).
+- Answer given: every value is between 0 and 1. The values are small because 1% of all presses end in a direct regain (3,028 of 314,725). The numbers in the screenshot (-0.55, 3.43) were z-scores, not the ratio. The spread is thin: 85 of the 243 reference DMs have exactly 0.
+- No code changed. Staged `docs/activity.md`; nothing committed.
+
+### Prompt
+
+> Read claude.md, tasks/todo.md and the last 5 entries in docs/activity.md and prepare for a new to-do.
+> Player profile page.
+>
+> Use design demo as a template and let's make following sections.
+> 1. Player selector. season --> competition --> team (optional) --> player
+> 2. minutes, games, position breakdown
+> 3. within most played position (top2)  --> score per profile.
+>
+> 4. Most similar players section: gives top 5 based on role (dropdown) in top 2 of most played positions.
+
+### Actions
+
+- Read `CLAUDE.MD`, `tasks/todo.md`, the last five entries of this log, the design demo page, the Benchmarks page, the engine, the profiles and the data layer.
+- Measured in the player table: the two most played roles hold 94% of a player's minutes on average; the second role has enough matches for 18% of the players who have one; 73 players have two teams in the same competition. CB, FB/WB, AM and W have no profile.
+- Added Task 18 to `tasks/todo.md`: the four sections on a new page `pages/3_Player_Profile.py`, one similarity function in `src/similarity/`, and nine decisions. Marked Task 12 (the earlier plan for this page) as replaced.
+- No code changed. Waiting for the user to verify the plan. Staged `tasks/todo.md` and `docs/activity.md`; nothing committed.
+
+### Prompt
+
+> 1. ok
+> 2. ok
+> 3. yes
+> 4. ok
+> 5. yes
+> 6. ok
+> 7. --> make a "switch" to include low sample players
+> 8. yes
+> 9. include a radar with drop downs for role and profile in section 3.
+
+### Actions
+
+- Wrote the answers into the Task 18 plan in `tasks/todo.md`. Answer 7 was read as a switch on the similar players section; answer 9 as a radar of the profile's metric percentiles next to the score bars.
+- `src/similarity/profile.py` (new): `most_similar`, weighted Euclidean distance on the z-scores of a profile's metrics, scaled to a 0-100 similarity.
+- `pages/3_Player_Profile.py` (new): selector, header and tiles, position breakdown (bar and table), profile scores with radar for the two most played roles, the five most similar players with the low-sample switch.
+- `README.md`: folder list.
+- Verified without a browser: headless app test of the page for two players, with the team box and the switch; hand check of one profile score and of the five similarities. The stored profiles and catalogue were not changed by the test.
+- Added the review section for Task 18 to `tasks/todo.md`. Staged the new and changed files; nothing committed.
+
+### Prompt
+
+> remove similarity but choose best players in the selected profile, compared to target player
+
+### Actions
+
+- `pages/3_Player_Profile.py`: section 4 now shows the five players with the highest profile score for the chosen profile, with the chosen player in the first row and a column with the difference to him. The low-sample switch stays.
+- Removed `src/similarity/profile.py`; no page uses it.
+- Headless app test of the page with the switch on and off.
+- Added Task 19 with its review to `tasks/todo.md`. Staged the changed files; nothing committed.
+
+### Prompt
+
+> log as done.
+
+### Actions
+
+- `tasks/todo.md`: Tasks 18 and 19 (Player Profile page) marked as done, logged as done by the user; added to the "Where we are" list together with Tasks 13 to 17.
+- No code changed. Staged `tasks/todo.md` and `docs/activity.md`; nothing committed.
+
+### Prompt
+
+> add a logic for new colums: profile score (weighted) and profile percentile (weighted) in the benchmarks page. Let's use the opta power rankings (url = https://theanalyst.com/articles/strongest-football-leagues-in-the-world-opta-power-rankings) in the competitions_power_rankings.csv
+
+### Actions
+
+- Read `data/raw/competition_power_rankings.csv` (five competitions with an Opta rating, 79.6 to 92.7) and the profile score calculation.
+- Added Task 20 to `tasks/todo.md`: the weighted score as a shift by league rating with one setting (rating points per z-score, default 10), the weighted percentile over all competitions within the role, and eight decisions.
+- No code changed. Waiting for the user to verify the plan. Staged `tasks/todo.md` and `docs/activity.md`; nothing committed.
+
+### Prompt
+
+> 8. include the weighted and raw scores in player profile page.
+
+### Actions
+
+- Took this as approval of Task 20 with decisions 1 to 7 as proposed and the Player Profile page added.
+- `src/benchmarks/engine.py`: `competition_ratings` and `weighted_score` (profile score minus the rating gap to the strongest league divided by the rating points per z-score, default 10; percentile within the role over all competitions).
+- `pages/1_Benchmarks.py`: sidebar field "Rating points per z-score", the columns "profile score (weighted)" and "profile percentile (weighted)", caption, warning for a competition without a rating.
+- `pages/3_Player_Profile.py`: raw and weighted bar per profile; the best-players table shows both scores and ranks on the weighted one.
+- `src/data/inventory.py`: the rankings file listed as a reference file.
+- Verified without a browser: hand check of one weighted score and percentile; headless app test of the Benchmarks page, the Player Profile page and the main page.
+- Added the review section for Task 20 to `tasks/todo.md`. Staged the changed files; nothing committed. `data/profiles.csv` (new profiles saved by the user) left unstaged.
+
+### Prompt
+
+> Read claude.md, tasks/todo.md and the last 5 entries in docs/activity.md and prepare for a new to-do.
+>
+> New to-do --> when selecting a player in the player profile page, load the top 10 metrics they are strong in per category (Physical, Passing,...) within competition for the top 2 roles played in (toggle to switch between them).
+> Check how long this would take to calculate for Leonardo da Silva Lopes
+
+### Actions
+
+- Read `CLAUDE.md`, `tasks/todo.md`, the last five entries of this log, the Player Profile page, the engine, the data layer and the catalogue.
+- Timed with a script outside the project: all 3,128 full-match metrics for Leonardo da Silva Lopes (KAA Gent; DM 742 minutes, CM 506 minutes) within his competition and two roles take 78 seconds; picking the top 10 per category takes 0.1 seconds.
+- Started a second timing run for all players; the user stopped it.
+
+### Prompt
+
+> stop
+
+### Actions
+
+- Stopped. Reported the timing and three findings from the top-10 lists (rare events on top, the same metric in several pressure files, variants of one metric). No project file changed.
+
+### Prompt
+
+> This will take too long. What if we store only the metrics needed for calculating z-scores in a table (permanent, csv file) and load those when player is selected + "run calculations" button is pressed?
+
+### Actions
+
+- Timed the idea: the season values of this one player alone take 54 seconds, because the time depends on the number of metrics and not on the number of players. Proposed two options: store the top metrics per player, or the user's idea plus a faster season calculation. No project file changed.
+
+### Prompt
+
+> option 2 with only z-scores is what i meant. go that route. so per competition, role and metric mean and spread
+
+### Actions
+
+- Found the cause of the slowness: `foundation.rate_column` reads the catalogue file from disk on every call, several times per metric. Tested outside the project with the catalogue read once: one player 12.5 seconds, all players 29 seconds.
+- Added Task 21 to `tasks/todo.md`: the measurements, the chosen route (stored mean and spread per competition, role and metric; z-scores only; "Run calculations" button), the plan and eight decisions.
+- No code changed. Waiting for the user to verify the plan. Staged `tasks/todo.md` and `docs/activity.md`; nothing committed.
+
+### Prompt
+
+> explain point 5.
+
+### Actions
+
+- Explained decision 5 of Task 21: a z-score is measured against the players with enough matches in the same competition and role. Counted them in the player table: 10 (AM, Superliga) to 108 (CB, Championship); 34 DMs and 57 CMs for Leonardo da Silva Lopes. No file changed.
+
+### Prompt
+
+> go
+
+### Actions
+
+- Took this as approval of Task 21 with all eight decisions as proposed.
+- `src/data/foundation.py`, `src/benchmarks/engine.py`: `rate_column` uses the catalogue rows already loaded instead of reading the catalogue file per metric. Checked that the benchmark table is identical before and after.
+- `src/benchmarks/strengths.py` (new): `metric_reference`, `run_metric_reference`, `player_strengths`, `strongest`.
+- `pages/1_Benchmarks.py`: button "Recalculate metric reference".
+- `pages/3_Player_Profile.py`: section "Strongest metrics" with "Run calculations", the Role choice, the switch "Useful metrics only" and one table per category.
+- `README.md`: folder list.
+- Built `data/derived/metric_reference_2026-10-13T213352.csv` once (32 seconds, 109,480 rows, ignored by git).
+- Verified without a browser: 52 z-scores of Leonardo da Silva Lopes equal `engine.benchmark`; "Run calculations" takes 9 to 10 seconds, switching the role 0.1 seconds; headless app test of the Player Profile and Benchmarks pages.
+- Added the review section for Task 21 to `tasks/todo.md`. Staged the new and changed files; nothing committed. `data/metric_catalogue.csv` and `data/profiles.csv` (earlier changes by the user) left unstaged.
+
+### Prompt
+
+> Read claude.md, tasks/todo.md and the last 5 entries in docs/activity.md and prepare for a new to-do.
+
+### Actions
+
+- Read `CLAUDE.md`, `tasks/todo.md` (Tasks 1 to 21) and the last five entries of this log; looked at the git status.
+- Found three changes made outside the tasks, all unstaged: `pages/9_Design_Demo.py` deleted, a `placeholder` argument added to the Team box in `pages/3_Player_Profile.py`, two rows removed from `data/metric_catalogue.csv`, and further edits in `data/profiles.csv`.
+- No project file changed apart from this log. Waiting for the new to-do.
+
+### Prompt
+
+> Leave out the weighted variant for the "profile scores" section on player profile page.
+
+### Actions
+
+- Added Task 22 to `tasks/todo.md` (plan and review). No separate plan check: one section on one page.
+- `pages/3_Player_Profile.py`, section "Profile scores": one bar per profile (raw score, percentile within competition and role). The "weighted" bar and its sentence in the caption are removed. "Best players in the profile" and the Benchmarks page are unchanged.
+- Verified without a browser: headless app test of the page, no errors, no weighted bar.
+- Staged `pages/3_Player_Profile.py` (this also staged the `placeholder` argument the user added to the Team box), `tasks/todo.md` and `docs/activity.md`; nothing committed.
+
+### Prompt
+
+> check cut of text in radar and propose fix. This is a new to-do per claude.md rules.
+
+(With a screenshot of the radar "Creative Passer", CM, Sven Kums: the labels on the left and right are cut off.)
+
+### Actions
+
+- Read the radar code in `components/sc_chart/sc_charts.js`, `src/viz/payloads.py` and the call in `pages/3_Player_Profile.py`.
+- Cause: axis labels are drawn on one line and the radar takes 66% of the frame, so names of 39 to 55 characters run past the edge of the canvas.
+- Added Task 23 to `tasks/todo.md` with the cause, the plan (wrap labels at 18 characters, radius 58%) and two decisions. No code changed; waiting for the plan check.
+- Staged `tasks/todo.md` and `docs/activity.md`; nothing committed.
+
+### Prompt
+
+> approved
+
+### Actions
+
+- Took this as approval of the Task 23 plan with both decisions as proposed (wrap in the chart code, smaller radar).
+- `components/sc_chart/sc_charts.js`, function `radar`: axis labels wrap on spaces at 18 characters per line; radius from 66% to 58%.
+- Verified without a browser: wrap output for the "Creative Passer" names (3 and 4 lines), syntax check of the file, headless app test of the Player Profile page (no errors).
+- Added the review for Task 23 to `tasks/todo.md`. Staged `components/sc_chart/sc_charts.js`, `tasks/todo.md` and `docs/activity.md`; nothing committed.

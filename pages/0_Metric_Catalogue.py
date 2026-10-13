@@ -41,7 +41,6 @@ with st.sidebar:
     files = st.multiselect("File", sorted(in_category["file"].unique()))
     calculations = st.multiselect("Calculation", RAW_CALCULATIONS)
     inverse = st.selectbox("Lower is better", ["All", "Yes", "No"])
-    search = st.text_input("Search in metric name or definition")
     full_only = st.checkbox("Full match only", value=True, help="Hide the first-half and second-half physical metrics.")
 
 view = in_category
@@ -51,15 +50,24 @@ if calculations:
     view = view[view["calculation"].isin(calculations)]
 if inverse != "All":
     view = view[view["inverse"] == (inverse == "Yes")]
-if search:
-    text = view["metric"] + " " + view["definition"]
-    view = view[text.str.contains(search, case=False, regex=False)]
 if full_only:
     view = view[view["scope"] == "full"]
 
 tab_general, tab_calculated = st.tabs(["General catalogue", "Calculated season metrics"])
 
 with tab_general:
+    search = st.text_input(
+        "Search the table",
+        placeholder="For example: regain pressing high block",
+        help="Searches category, file, metric name, type and definition. With several words, all of them "
+        "have to be found; an underscore in a name counts as a space.",
+    )
+    if search:
+        text = view[["category", "file", "metric", "type", "definition"]].fillna("").agg(" ".join, axis=1)
+        text = text.str.replace("_", " ").str.lower()
+        for word in search.lower().replace("_", " ").split():
+            view = view[text.loc[view.index].str.contains(word, regex=False)]
+
     m1, m2, m3 = st.columns(3)
     m1.metric("Metrics shown", len(view))
     m2.metric("Lower is better", int(view["inverse"].sum()))

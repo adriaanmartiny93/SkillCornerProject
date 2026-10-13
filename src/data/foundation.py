@@ -78,9 +78,13 @@ def run_player_pipeline(
     return write_derived(seasons, "player_seasons")
 
 
-def rate_column(name: str, metric: str) -> str:
-    """Name of the rate column: `<metric>_p30`, `_p90`, or `_season` if not per minute."""
-    per = metric_specs(name).at[metric, "per"]
+def rate_column(name: str, metric: str, specs: pd.DataFrame | None = None) -> str:
+    """Name of the rate column: `<metric>_p30`, `_p90`, or `_season` if not per minute.
+
+    `specs` is the output of `metric_specs(name)`; pass it when naming many
+    metrics, so the catalogue is not read again for each of them.
+    """
+    per = (metric_specs(name) if specs is None else specs).at[metric, "per"]
     return f"{metric}_p{PER[per][1]}" if per in PER else f"{metric}_season"
 
 
@@ -113,7 +117,7 @@ def match_values(name: str, metrics: list[str], matches: pd.DataFrame) -> pd.Dat
     for metric in specs.index[specs["calculation"] == "total"]:
         phase, number = PER[specs.at[metric, "per"]]
         minutes = df[MINUTES[phase]]
-        df[rate_column(name, metric)] = df[metric] / minutes.where(minutes > 0) * number
+        df[rate_column(name, metric, specs)] = df[metric] / minutes.where(minutes > 0) * number
     return df
 
 
@@ -143,7 +147,7 @@ def season_rates(
         used = included if match_filter else pd.Series(True, index=values.index)
         column = values[metric].where(used)
         if calculation == "total":
-            season = values[rate_column(name, metric)].where(used).groupby(keys).mean()
+            season = values[rate_column(name, metric, specs)].where(used).groupby(keys).mean()
         elif calculation == "ratio":
             total = values[weight].where(used).groupby(keys).sum()
             season = column.groupby(keys).sum() / total.where(total > 0)
@@ -160,7 +164,7 @@ def season_rates(
             out[f"{metric}_matches"] = best.groupby(keys).count()
         else:
             season = column.groupby(keys).agg(calculation)
-        out[rate_column(name, metric)] = season
+        out[rate_column(name, metric, specs)] = season
     return out.reset_index()
 
 

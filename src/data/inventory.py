@@ -23,6 +23,7 @@ METRIC_FILES = {
 
 OTHER_FILES = {
     "competition_editions": ("Reference", "competition edition", "-"),
+    "competition_power_rankings": ("Reference", "competition", "-"),
     "player_performance_metadata": ("Line-ups and minutes", "player x match", "-"),
 }
 

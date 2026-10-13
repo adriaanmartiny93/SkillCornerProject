@@ -1,21 +1,56 @@
 profile,role,file,metric,weight
-Ball Winning Midfielder,DM,physical,timetohsr,0.1
-Ball Winning Midfielder,DM,pressure_engagements,count_indirect_regain_pressure,0.2
-Ball Winning Midfielder,DM,on_ball_engagements,count_direct_regain_recovery_press,0.2
-Ball Winning Midfielder,DM,on_ball_engagements,count_direct_regain_pressing,0.3
-Ball Winning Midfielder,DM,physical,explacceltohsr_count_full_otip,0.2
-Deep Lying Playmaker,DM,passes_to_off_ball_runs,count_completed_passes_coming_short_runs_in_build_up,0.1
-Deep Lying Playmaker,DM,line_breaking_passes,xthreat_completed_passes_through_first_line,0.3
-Deep Lying Playmaker,DM,line_breaking_options,xthreat_around_first_line,0.2
-Deep Lying Playmaker,DM,line_breaking_passes,xthreat_completed_passes_passing_option_in_build_up,0.4
-Box To Box Midfielder,CM,physical,hi_count_full_all,0.1
-Box To Box Midfielder,CM,physical,timetohsr_best3,0.2
-Box To Box Midfielder,CM,physical,psv99,0.1
-Box To Box Midfielder,CM,off_ball_runs,count_off_ball_runs_in_create,0.2
-Box To Box Midfielder,CM,off_ball_runs,xthreat_received_runs_ahead_of_the_ball,0.1
-Box To Box Midfielder,CM,line_breaking_options,xthreat_received_through_first_line_in_create,0.1
-Box To Box Midfielder,CM,passes_to_off_ball_runs,xthreat_completed_passes_overlap_in_create,0.2
 Mobile Striker,CF,physical,psv99_best3,0.35
 Mobile Striker,CF,physical,timetosprint_best3,0.25
 Mobile Striker,CF,off_ball_runs,xthreat_runs_in_behind,0.25
 Mobile Striker,CF,off_ball_runs,xthreat_targeted_off_ball_runs_in_finish,0.15
+Ball Winning Midfielder,DM,physical,timetosprint_best3,0.3
+Ball Winning Midfielder,DM,pressing_engagements,count_indirect_regain_per_press,0.3
+Ball Winning Midfielder,DM,on_ball_engagements,count_pressing,0.2
+Ball Winning Midfielder,DM,on_ball_engagements,count_counter_press,0.1
+Ball Winning Midfielder,DM,on_ball_engagements,count_force_backward_counter_press,0.1
+Classical Winger,W,physical,psv99_best3,0.25
+Classical Winger,W,on_ball_engagements,count_indirect_regain_counter_press,0.25
+Classical Winger,W,off_ball_runs,xthreat_runs_in_behind,0.25
+Classical Winger,W,possessions,8m_carry_at_speed_all_possessions,0.25
+Inside Playmaker,W,possessions,received_in_tight_space_possession_retentions,0.2
+Inside Playmaker,W,possessions,received_in_tight_space_possessions_in_finish,0.3
+Inside Playmaker,W,passes_to_off_ball_runs,xthreat_pass_opportunities_underlap_runs,0.1
+Inside Playmaker,W,passes_to_off_ball_runs,xthreat_completed_passes_overlap_runs,0.1
+Inside Playmaker,W,line_breaking_passes,xthreat_completed_passes_passing_option,0.3
+Box To Box Midfielder,CM,physical,hi_count_full_all,0.2
+Box To Box Midfielder,CM,physical,timetohsr_best3,0.2
+Box To Box Midfielder,CM,physical,psv99,0.1
+Box To Box Midfielder,CM,off_ball_runs,count_off_ball_runs_in_create,0.2
+Box To Box Midfielder,CM,off_ball_runs,xthreat_received_runs_ahead_of_the_ball,0.1
+Box To Box Midfielder,CM,on_ball_engagements,count_stop_possession_danger_recovery_press,0.1
+Box To Box Midfielder,CM,on_ball_engagements,count_recovery_press,0.1
+Creative Passer,CM,line_breaking_passes,xthreat_completed_passes_through_second_last_line,0.2
+Creative Passer,CM,line_breaking_passes,xthreat_completed_passes_around_second_last_line,0.2
+Creative Passer,CM,passes_to_off_ball_runs,xthreat_completed_passes_off_ball_runs,0.2
+Creative Passer,CM,line_breaking_passes,xpass_completion_pass_attempts_through_last_line,0.2
+Creative Passer,CM,line_breaking_passes,xpass_completion_pass_attempts_through_second_last_line,0.2
+Deep Lying Playmaker,DM,line_breaking_passes,xthreat_completed_passes_passing_option_in_build_up,0.1666666666666666
+Deep Lying Playmaker,DM,line_breaking_options,xpass_completion_received_passing_option_in_build_up,0.1666666666666666
+Deep Lying Playmaker,DM,line_breaking_passes,xthreat_completed_passes_through_second_last_line,0.1666666666666666
+Deep Lying Playmaker,DM,line_breaking_passes,xthreat_completed_passes_around_second_last_line,0.1666666666666666
+Deep Lying Playmaker,DM,line_breaking_options,count_received_through_first_line_in_build_up,0.1666666666666666
+Deep Lying Playmaker,DM,line_breaking_options,count_received_around_first_line,0.1666666666666666
+Fingerprint - Norgaard,DM,physical,total_distance_full_all,0.1428571428571428
+Fingerprint - Norgaard,DM,off_ball_runs,avg_distance_covered_runs_ahead_of_the_ball_in_create,0.1428571428571428
+Fingerprint - Norgaard,DM,line_breaking_options,count_received_passing_option_in_build_up,0.1428571428571428
+Fingerprint - Norgaard,DM,passes_to_off_ball_runs,xthreat_pass_attempts_off_ball_runs_in_build_up,0.1428571428571428
+Fingerprint - Norgaard,DM,on_ball_engagements,count_possession_danger_pressure,0.1428571428571428
+Fingerprint - Norgaard,DM,possessions,count_one_touch_passes_possessions_in_build_up,0.1428571428571428
+Fingerprint - Norgaard,DM,possessions,received_in_tight_space_possessions_in_build_up,0.1428571428571428
+Fingerprint - Mbeumo,W,physical,explacceltosprint_count_full_all,0.08333333333333333
+Fingerprint - Mbeumo,W,off_ball_runs,avg_speed_avg_pulling_half_space_runs_in_create,0.08333333333333333
+Fingerprint - Mbeumo,W,off_ball_runs,xthreat_targeted_off_ball_runs_in_build_up,0.08333333333333333
+Fingerprint - Mbeumo,W,off_ball_runs,count_received_runs_in_behind,0.08333333333333333
+Fingerprint - Mbeumo,W,line_breaking_options,count_wide_channel_through_second_last_line,0.08333333333333333
+Fingerprint - Mbeumo,W,line_breaking_options,count_wide_channel_through_last_line_in_create,0.08333333333333333
+Fingerprint - Mbeumo,W,line_breaking_options,count_received_around_second_last_line_in_create,0.08333333333333333
+Fingerprint - Mbeumo,W,passes_to_off_ball_runs,xthreat_completed_passes_overlap_runs,0.08333333333333333
+Fingerprint - Mbeumo,W,passes_to_off_ball_runs,xthreat_pass_attempts_off_ball_runs_in_transition,0.08333333333333333
+Fingerprint - Mbeumo,W,possessions,received_in_open_space_possessions_in_transition,0.08333333333333333
+Fingerprint - Mbeumo,W,on_ball_engagements,count_goal_side_end_on_ball_engagements_in_transition,0.08333333333333333
+Fingerprint - Mbeumo,W,on_ball_engagements,count_possession_danger_recovery_press,0.08333333333333333
